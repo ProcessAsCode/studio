@@ -1,0 +1,93 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid #ddd;
+  background: #f7f7fb;
+}
+
+.app-logo {
+  font-weight: 600;
+}
+
+.app-actions button {
+  margin-left: 8px;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.app-sidebar {
+  width: 220px;
+  border-right: 1px solid #ddd;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.app-workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.app-tabs {
+  border-bottom: 1px solid #ddd;
+  padding: 4px 8px;
+}
+
+.tab-button {
+  border: none;
+  background: transparent;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.tab-button.active {
+  border-bottom: 2px solid #007bff;
+  font-weight: 600;
+}
+
+.app-tab-content {
+  flex: 1;
+  position: relative;
+}
+
+.tab-panel {
+  display: none;
+  height: 100%;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+.modeler-canvas {
+  width: 100%;
+  height: calc(100vh - 100px); /* tweak when needed */
+}
+
+.manifest-editor {
+  width: 100%;
+  height: 100%;
+  border: none;
+  padding: 8px;
+  font-family: monospace;
+  resize: none;
+}
