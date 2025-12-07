@@ -192,9 +192,9 @@ function renderProjectList() {
     const li = document.createElement("li");
     li.textContent = p.name || p.id;
     li.dataset.projectId = p.id;
-    li.classList.add("project-item");
+    li.classList.add("project-item", "py-1", "px-2", "rounded");
     if (currentProject && currentProject.id === p.id) {
-      li.classList.add("active");
+      li.classList.add("active", "bg-primary-subtle");
     }
 
     li.addEventListener("click", async () => {
@@ -352,7 +352,14 @@ async function loadProjectIntoEditors() {
     const { warnings } = await dmnModeler.importXML(currentProject.dmnXml);
     console.log("DMN warnings:", warnings);
     const views = dmnModeler.getViews();
-    if (views.length) await dmnModeler.open(views[0]);
+    if (views && views.length) {
+      // Prefer decision table view if available
+      let viewToOpen = views[0];
+      const decisionView = views.find(v => v.type === "decisionTable");
+      if (decisionView) viewToOpen = decisionView;
+
+      await dmnModeler.open(viewToOpen);
+    }
   }
   if (cmmnModeler) await cmmnModeler.importXML(currentProject.cmmnXml);
 

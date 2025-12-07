@@ -48,19 +48,21 @@ body {
 }
 
 .app-tabs {
-  border-bottom: 1px solid #ddd;
-  padding: 4px 8px;
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #dee2e6;
 }
 
 .tab-button {
   border: none;
-  background: transparent;
-  padding: 6px 12px;
+  background: none;
+  padding: 8px 16px;
   cursor: pointer;
+  font: inherit;
 }
 
 .tab-button.active {
-  border-bottom: 2px solid #007bff;
+  /* let Bootstrap nav-link active style dominate; minimal override */
   font-weight: 600;
 }
 
@@ -81,6 +83,13 @@ body {
 .modeler-canvas {
   width: 100%;
   height: calc(100vh - 110px); /* adjust if header height changes */
+}
+
+#tab-dmn .modeler-canvas {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 8px;
 }
 
 .manifest-editor {
