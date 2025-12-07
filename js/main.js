@@ -195,8 +195,7 @@ function setupButtons() {
   document
     .getElementById("btn-export-uapf")
     .addEventListener("click", () => {
-      // UAPF export logic will be implemented later
-      alert("UAPF export not implemented yet.");
+      exportUapf();
     });
 
   const manifestEditor = document.getElementById("manifest-editor");
@@ -362,4 +361,104 @@ async function onNewProject() {
   const proj = createNewProject();
   setProject(proj);
   await loadProjectIntoEditors();
+}
+
+// --- Sync editors -> project XML -------------------------------------------
+
+async function syncProjectXmlFromEditors() {
+  if (!currentProject) return;
+
+  // BPMN
+  if (bpmnModeler) {
+    try {
+      const { xml } = await bpmnModeler.saveXML({ format: true });
+      currentProject.bpmnXml = xml;
+    } catch (err) {
+      console.error("Failed to save BPMN XML", err);
+    }
+  }
+
+  // DMN
+  if (dmnModeler) {
+    try {
+      const { xml } = await dmnModeler.saveXML({ format: true });
+      currentProject.dmnXml = xml;
+    } catch (err) {
+      console.error("Failed to save DMN XML", err);
+    }
+  }
+
+  // CMMN
+  if (cmmnModeler) {
+    try {
+      const { xml } = await cmmnModeler.saveXML({ format: true });
+      currentProject.cmmnXml = xml;
+    } catch (err) {
+      console.error("Failed to save CMMN XML", err);
+    }
+  }
+
+  // Update timestamps
+  const nowIso = new Date().toISOString();
+  currentProject.updatedAt = nowIso;
+  if (currentProject.manifest) {
+    currentProject.manifest.updatedAt = nowIso;
+  }
+  updateManifestEditor();
+}
+
+// --- Export UAPF (ZIP with manifest + BPMN/DMN/CMMN) -----------------------
+
+async function exportUapf() {
+  if (!currentProject) {
+    alert("No project loaded.");
+    return;
+  }
+
+  if (typeof JSZip === "undefined") {
+    console.error("JSZip not loaded");
+    alert("Export error: JSZip not available.");
+    return;
+  }
+
+  // Make sure project XML is up to date
+  await syncProjectXmlFromEditors();
+
+  const zip = new JSZip();
+
+  // Manifest
+  const manifestJson = JSON.stringify(currentProject.manifest, null, 2);
+  zip.file("manifest.json", manifestJson);
+
+  // Models (single file per type for now)
+  if (currentProject.bpmnXml) {
+    zip.file("bpmn/main.bpmn.xml", currentProject.bpmnXml);
+  }
+  if (currentProject.dmnXml) {
+    zip.file("dmn/main.dmn.xml", currentProject.dmnXml);
+  }
+  if (currentProject.cmmnXml) {
+    zip.file("cmmn/main.cmmn.xml", currentProject.cmmnXml);
+  }
+
+  try {
+    const blob = await zip.generateAsync({ type: "blob" });
+    const projectName = (currentProject.name || "algomation-project").replace(
+      /[^a-z0-9_\-]+/gi,
+      "_"
+    );
+    const filename = projectName + ".uapf";
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Failed to generate UAPF ZIP", err);
+    alert("Failed to export UAPF. See console for details.");
+  }
 }
