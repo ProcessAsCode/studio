@@ -173,6 +173,9 @@ function setupTabs() {
 
       btn.classList.add("active");
       document.getElementById(`tab-${tab}`).classList.add("active");
+
+      // Refit the currently visible canvas to avoid non-finite zoom values
+      fitTabView(tab);
     });
   });
 }
@@ -220,6 +223,41 @@ function setupButtons() {
   }
 }
 
+function isCanvasVisible(canvasEl) {
+  if (!canvasEl) return false;
+  const rect = canvasEl.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0;
+}
+
+function fitModelerViewport(modeler, canvasId) {
+  if (!modeler) return;
+  const canvasEl = document.getElementById(canvasId);
+  if (!isCanvasVisible(canvasEl)) return;
+
+  try {
+    const canvas = modeler.get("canvas");
+    canvas.zoom("fit-viewport");
+  } catch (err) {
+    console.warn("Could not fit viewport for", canvasId, err);
+  }
+}
+
+function fitTabView(tab) {
+  if (tab === "bpmn") {
+    fitModelerViewport(bpmnModeler, "bpmn-canvas");
+  } else if (tab === "cmmn") {
+    fitModelerViewport(cmmnModeler, "cmmn-canvas");
+  } else if (tab === "dmn") {
+    // DMN handles view activation separately but we still make sure canvases render
+    if (dmnModeler) {
+      const activeView = dmnModeler.getActiveView();
+      if (activeView) {
+        dmnModeler.open(activeView);
+      }
+    }
+  }
+}
+
 // --- BPMN -------------------------------------------------------------------
 
 async function initBpmnModeler() {
@@ -249,12 +287,7 @@ async function initDmnModeler() {
     return;
   }
 
-  // Try various globals depending on how the UMD bundle exposes itself
-  const DmnCtor =
-    window.DmnJS ||
-    window.DmnModeler ||
-    window.dmnjs ||
-    window.Dmn;
+  const DmnCtor = window.DmnJS;
 
   console.log("DMN ctor detected:", DmnCtor);
 
@@ -300,8 +333,7 @@ async function loadProjectIntoEditors() {
   if (bpmnModeler && currentProject.bpmnXml) {
     try {
       await bpmnModeler.importXML(currentProject.bpmnXml);
-      const canvas = bpmnModeler.get("canvas");
-      canvas.zoom("fit-viewport");
+      fitModelerViewport(bpmnModeler, "bpmn-canvas");
     } catch (err) {
       console.error("Error importing BPMN XML", err);
     }
@@ -325,8 +357,7 @@ async function loadProjectIntoEditors() {
   if (cmmnModeler && currentProject.cmmnXml) {
     try {
       await cmmnModeler.importXML(currentProject.cmmnXml);
-      const canvas = cmmnModeler.get("canvas");
-      canvas.zoom("fit-viewport");
+      fitModelerViewport(cmmnModeler, "cmmn-canvas");
     } catch (err) {
       console.error("Error importing CMMN XML", err);
     }
