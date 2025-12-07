@@ -28,8 +28,9 @@
     <div class="app-logo">Algomation Studio</div>
     <div class="app-actions">
       <button id="btn-new-project">New Project</button>
-      <button id="btn-import-uapf">Import UAPF (soon)</button>
+      <button id="btn-import-uapf">Import UAPF</button>
       <button id="btn-export-uapf">Export UAPF</button>
+      <button id="btn-about">About</button>
     </div>
   </header>
 
@@ -58,6 +59,7 @@
           <div id="cmmn-canvas" class="modeler-canvas"></div>
         </div>
         <div id="tab-manifest" class="tab-panel">
+          <div id="manifest-links" class="manifest-links"></div>
           <textarea id="manifest-editor" class="manifest-editor" spellcheck="false"></textarea>
         </div>
       </section>
@@ -65,6 +67,28 @@
   </main>
 
   <input type="file" id="uapf-file-input" accept=".uapf" style="display:none" />
+
+  <div id="about-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal">
+      <h2>About Algomation Studio</h2>
+      <p><strong>Algomation Studio</strong> is a visual editor for BPMN, DMN and CMMN models bundled into a Unified Algorithmic Process Format (UAPF) archive.</p>
+      <ul>
+        <li>Author processes in BPMN</li>
+        <li>Define decisions in DMN</li>
+        <li>Model cases in CMMN</li>
+        <li>Export all into a single .uapf file</li>
+      </ul>
+      <p>
+        UAPF is intended as a machine-readable container that AI agents and runtimes can execute as part of an "algorithmated" enterprise.
+      </p>
+      <p>
+        Learn more at: <a href="https://algomation.io/" target="_blank">algomation.io</a>
+      </p>
+      <button id="about-close">Close</button>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
 
   <!-- Libraries (all working versions) -->
   <script src="https://unpkg.com/bpmn-js@17.0.1/dist/bpmn-modeler.production.min.js"></script>
