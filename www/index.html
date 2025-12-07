@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Algomation Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Simple base styling, can be replaced with Bootstrap later -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-logo">Algomation Studio</div>
+    <div class="app-actions">
+      <button id="btn-new-project">New Project</button>
+      <button id="btn-import-uapf">Import UAPF</button>
+      <button id="btn-export-uapf">Export UAPF</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <aside class="app-sidebar">
+      <h3>Projects</h3>
+      <ul id="project-list"></ul>
+    </aside>
+
+    <section class="app-workspace">
+      <nav class="app-tabs">
+        <button class="tab-button active" data-tab="bpmn">Process (BPMN)</button>
+        <button class="tab-button" data-tab="dmn">Decisions (DMN)</button>
+        <button class="tab-button" data-tab="cmmn">Cases (CMMN)</button>
+        <button class="tab-button" data-tab="manifest">Manifest</button>
+      </nav>
+
+      <section class="app-tab-content">
+        <div id="tab-bpmn" class="tab-panel active">
+          <div id="bpmn-canvas" class="modeler-canvas"></div>
+        </div>
+
+        <div id="tab-dmn" class="tab-panel">
+          <div id="dmn-canvas" class="modeler-canvas"></div>
+        </div>
+
+        <div id="tab-cmmn" class="tab-panel">
+          <div id="cmmn-canvas" class="modeler-canvas"></div>
+        </div>
+
+        <div id="tab-manifest" class="tab-panel">
+          <textarea id="manifest-editor" class="manifest-editor"></textarea>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <!-- Hidden file input for UAPF import -->
+  <input type="file" id="uapf-file-input" accept=".uapf" style="display:none" />
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
