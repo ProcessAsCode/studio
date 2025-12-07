@@ -5,37 +5,45 @@
   <title>Algomation Studio</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- BPMN styles -->
-  <link rel="stylesheet"
-        href="https://unpkg.com/bpmn-js@11.5.0/dist/assets/diagram-js.css" />
-  <link rel="stylesheet"
-        href="https://unpkg.com/bpmn-js@11.5.0/dist/assets/bpmn-font/css/bpmn-embedded.css" />
+  <!-- BPMN.js styles -->
+  <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.1/dist/assets/diagram-js.css" />
+  <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.1/dist/assets/bpmn-font/css/bpmn.css" />
 
-  <!-- DMN styles (no fixed version; always a valid release) -->
-  <link rel="stylesheet"
-        href="https://unpkg.com/dmn-js/dist/assets/dmn-js-drd.css" />
-  <link rel="stylesheet"
-        href="https://unpkg.com/dmn-js/dist/assets/dmn-js-decision-table.css" />
-  <link rel="stylesheet"
-        href="https://unpkg.com/dmn-js/dist/assets/dmn-js-literal-expression.css" />
-  <link rel="stylesheet"
-        href="https://unpkg.com/dmn-js/dist/assets/dmn-font/css/dmn-embedded.css" />
+  <!-- DMN.js styles -->
+  <link rel="stylesheet" href="https://unpkg.com/dmn-js@14.5.0/dist/assets/dmn-js-decision-table.css" />
+  <link rel="stylesheet" href="https://unpkg.com/dmn-js@14.5.0/dist/assets/dmn-js-drd.css" />
+  <link rel="stylesheet" href="https://unpkg.com/dmn-js@14.5.0/dist/assets/dmn-js-literal-expression.css" />
+  <link rel="stylesheet" href="https://unpkg.com/dmn-js@14.5.0/dist/assets/dmn-font/css/dmn.css" />
 
-  <!-- CMMN styles -->
-  <link rel="stylesheet"
-        href="https://unpkg.com/cmmn-js@0.20.0/dist/assets/diagram-js.css" />
-  <link rel="stylesheet"
-        href="https://unpkg.com/cmmn-js@0.20.0/dist/assets/cmmn-font/css/cmmn-embedded.css" />
+  <!-- CMMN.js styles -->
+  <link rel="stylesheet" href="https://unpkg.com/cmmn-js@0.20.0/dist/assets/diagram-js.css" />
+  <link rel="stylesheet" href="https://unpkg.com/cmmn-js@0.20.0/dist/assets/cmmn-font/css/cmmn.css" />
 
-  <!-- Your app styling -->
+  <!-- Your app styling (you can leave css/style.css empty or minimal) -->
   <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body, html { margin:0; height:100%; font-family: system-ui, sans-serif; overflow:hidden; }
+    .app-header { padding: 10px 20px; background:#0d1117; color:white; display:flex; justify-content:space-between; align-items:center; }
+    .app-main { display:flex; height:calc(100% - 60px); }
+    .app-sidebar { width:250px; background:#161b22; color:#c9d1d9; padding:20px; }
+    .app-workspace { flex:1; display:flex; flex-direction:column; }
+    .app-tabs { display:flex; background:#0d1117; }
+    .tab-button { padding:12px 20px; background:none; border:none; color:#c9d1d9; cursor:pointer; }
+    .tab-button.active { background:#238636; }
+    .app-tab-content { flex:1; position:relative; background:#010409; }
+    .tab-panel { position:absolute; inset:0; display:none; }
+    .tab-panel.active { display:block; }
+    .modeler-canvas, .manifest-editor { width:100%; height:100%; border:none; background:#0d1117; color:#c9d1d9; }
+    .manifest-editor { padding:20px; font-family: 'Consolas', monospace; font-size:14px; }
+  </style>
 </head>
 <body>
+
   <header class="app-header">
     <div class="app-logo">Algomation Studio</div>
     <div class="app-actions">
       <button id="btn-new-project">New Project</button>
-      <button id="btn-import-uapf">Import UAPF</button>
+      <button id="btn-import-uapf">Import UAPF (soon)</button>
       <button id="btn-export-uapf">Export UAPF</button>
     </div>
   </header>
@@ -43,7 +51,7 @@
   <main class="app-main">
     <aside class="app-sidebar">
       <h3>Projects</h3>
-      <ul id="project-list"></ul>
+      <ul id="project-list"><li>Single-project demo mode</li></ul>
     </aside>
 
     <section class="app-workspace">
@@ -58,40 +66,27 @@
         <div id="tab-bpmn" class="tab-panel active">
           <div id="bpmn-canvas" class="modeler-canvas"></div>
         </div>
-
         <div id="tab-dmn" class="tab-panel">
           <div id="dmn-canvas" class="modeler-canvas"></div>
         </div>
-
         <div id="tab-cmmn" class="tab-panel">
           <div id="cmmn-canvas" class="modeler-canvas"></div>
         </div>
-
         <div id="tab-manifest" class="tab-panel">
-          <textarea id="manifest-editor"
-                    class="manifest-editor"
-                    spellcheck="false"></textarea>
+          <textarea id="manifest-editor" class="manifest-editor" spellcheck="false"></textarea>
         </div>
       </section>
     </section>
   </main>
 
-  <!-- Hidden file input for UAPF import -->
   <input type="file" id="uapf-file-input" accept=".uapf" style="display:none" />
 
-  <!-- BPMN Modeler (bpmn.io) UMD bundle -->
-  <script src="https://unpkg.com/bpmn-js@11.5.0/dist/bpmn-modeler.development.js"></script>
-
-  <!-- DMN Modeler (dmn-js) UMD bundle -->
-  <script src="https://unpkg.com/dmn-js/dist/dmn-modeler.development.js"></script>
-
-  <!-- CMMN Modeler (cmmn-js) UMD bundle -->
+  <!-- Libraries (all working versions) -->
+  <script src="https://unpkg.com/bpmn-js@17.0.1/dist/bpmn-modeler.production.min.js"></script>
+  <script src="https://unpkg.com/dmn-js@14.5.0/dist/dmn-modeler.production.min.js"></script>
   <script src="https://unpkg.com/cmmn-js@0.20.0/dist/cmmn-modeler.development.js"></script>
-
-  <!-- JSZip for UAPF export -->
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
-  <!-- Your app entry -->
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
