@@ -69,8 +69,8 @@ const EMPTY_CMMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <cmmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                   xmlns:cmmn="http://www.omg.org/spec/CMMN/20151109/MODEL"
                   xmlns:cmmndi="http://www.omg.org/spec/CMMN/20151109/DI"
-                  xmlns:dc="http://www.omg.org/spec/CMMN/20151109/DC"
-                  xmlns:di="http://www.omg.org/spec/CMMN/20151109/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
                   id="CMMNDefinitions_1"
                   targetNamespace="http://algomation.io/cmmn">
   <cmmn:case id="Case_main" name="Example case">
@@ -249,13 +249,22 @@ async function initDmnModeler() {
     return;
   }
 
-  if (typeof DmnJS === "undefined") {
-    console.error("DmnJS is not loaded. Check script tag in index.html.");
+  // Try various globals depending on how the UMD bundle exposes itself
+  const DmnCtor =
+    window.DmnJS ||
+    window.DmnModeler ||
+    window.dmnjs ||
+    window.Dmn;
+
+  console.log("DMN ctor detected:", DmnCtor);
+
+  if (!DmnCtor) {
+    console.error("DmnJS global not available. Check dmn-js script tag / network.");
     alert("DMN modeler library (dmn-js) not loaded.");
     return;
   }
 
-  dmnModeler = new DmnJS({
+  dmnModeler = new DmnCtor({
     container: "#dmn-canvas",
     width: "100%",
     height: "100%"
