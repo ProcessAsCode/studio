@@ -64,13 +64,10 @@ const EMPTY_DMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
 </definitions>
 `;
 
-// Minimal CMMN case model
+// Minimal CMMN case model (without DI)
 const EMPTY_CMMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <cmmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                   xmlns:cmmn="http://www.omg.org/spec/CMMN/20151109/MODEL"
-                  xmlns:cmmndi="http://www.omg.org/spec/CMMN/20151109/DI"
-                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
-                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
                   id="CMMNDefinitions_1"
                   targetNamespace="http://algomation.io/cmmn">
   <cmmn:case id="Case_main" name="Example case">
@@ -78,13 +75,6 @@ const EMPTY_CMMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
       <cmmn:stage id="Stage_1" name="Main stage" />
     </cmmn:casePlanModel>
   </cmmn:case>
-  <cmmndi:CMMNDiagram id="CMMNDiagram_1">
-    <cmmndi:CMMNPlane id="CMMNPlane_1" cmmnElementRef="CasePlanModel_1">
-      <cmmndi:CMMNShape id="CasePlanModel_1_di" cmmnElementRef="CasePlanModel_1">
-        <dc:Bounds x="150" y="80" width="400" height="250" />
-      </cmmndi:CMMNShape>
-    </cmmndi:CMMNPlane>
-  </cmmndi:CMMNDiagram>
 </cmmn:definitions>
 `;
 
