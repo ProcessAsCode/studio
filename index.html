@@ -34,6 +34,12 @@
 
   <header class="app-header">
     <div class="app-logo">Algomation Studio</div>
+
+    <!-- NEW: current project name badge -->
+    <div id="current-project-name" class="app-project-name text-truncate">
+      No project selected
+    </div>
+
     <div class="app-actions">
       <button id="btn-new-project" class="btn btn-sm btn-primary me-2">
         New Project
@@ -66,13 +72,82 @@
 
       <section class="app-tab-content">
         <div id="tab-bpmn" class="tab-panel active">
+          <div class="tab-toolbar d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <button id="btn-bpmn-import-xml" class="btn btn-sm btn-outline-secondary me-1">
+                Import BPMN XML
+              </button>
+              <button id="btn-bpmn-export-xml" class="btn btn-sm btn-outline-secondary">
+                Export BPMN XML
+              </button>
+            </div>
+            <button id="btn-bpmn-toggle-xml" class="btn btn-sm btn-outline-secondary">
+              Show XML
+            </button>
+          </div>
+
           <div id="bpmn-canvas" class="modeler-canvas"></div>
+
+          <div id="bpmn-xml-container" class="xml-container" style="display:none;">
+            <label class="small text-muted d-block mb-1">BPMN XML</label>
+            <textarea
+              id="bpmn-xml-editor"
+              class="xml-editor"
+              spellcheck="false"
+            ></textarea>
+          </div>
         </div>
         <div id="tab-dmn" class="tab-panel">
+          <div class="tab-toolbar d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <button id="btn-dmn-import-xml" class="btn btn-sm btn-outline-secondary me-1">
+                Import DMN XML
+              </button>
+              <button id="btn-dmn-export-xml" class="btn btn-sm btn-outline-secondary">
+                Export DMN XML
+              </button>
+            </div>
+            <button id="btn-dmn-toggle-xml" class="btn btn-sm btn-outline-secondary">
+              Show XML
+            </button>
+          </div>
+
           <div id="dmn-canvas" class="modeler-canvas"></div>
+
+          <div id="dmn-xml-container" class="xml-container" style="display:none;">
+            <label class="small text-muted d-block mb-1">DMN XML</label>
+            <textarea
+              id="dmn-xml-editor"
+              class="xml-editor"
+              spellcheck="false"
+            ></textarea>
+          </div>
         </div>
         <div id="tab-cmmn" class="tab-panel">
+          <div class="tab-toolbar d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <button id="btn-cmmn-import-xml" class="btn btn-sm btn-outline-secondary me-1">
+                Import CMMN XML
+              </button>
+              <button id="btn-cmmn-export-xml" class="btn btn-sm btn-outline-secondary">
+                Export CMMN XML
+              </button>
+            </div>
+            <button id="btn-cmmn-toggle-xml" class="btn btn-sm btn-outline-secondary">
+              Show XML
+            </button>
+          </div>
+
           <div id="cmmn-canvas" class="modeler-canvas"></div>
+
+          <div id="cmmn-xml-container" class="xml-container" style="display:none;">
+            <label class="small text-muted d-block mb-1">CMMN XML</label>
+            <textarea
+              id="cmmn-xml-editor"
+              class="xml-editor"
+              spellcheck="false"
+            ></textarea>
+          </div>
         </div>
         <div id="tab-manifest" class="tab-panel">
           <div id="manifest-links" class="manifest-links"></div>
@@ -83,6 +158,25 @@
   </main>
 
   <input type="file" id="uapf-file-input" accept=".uapf" style="display:none" />
+
+  <input
+    type="file"
+    id="bpmn-xml-file-input"
+    accept=".bpmn,.xml"
+    style="display:none"
+  />
+  <input
+    type="file"
+    id="dmn-xml-file-input"
+    accept=".dmn,.xml"
+    style="display:none"
+  />
+  <input
+    type="file"
+    id="cmmn-xml-file-input"
+    accept=".cmmn,.xml"
+    style="display:none"
+  />
 
   <div id="about-modal" class="modal-backdrop" style="display:none;">
     <div class="modal">

@@ -172,6 +172,16 @@ function createNewProject(name = "Untitled Project", description = "Algomation S
 function setProject(p) {
   currentProject = p;
 
+  // NEW: update header project name
+  const projNameEl = document.getElementById("current-project-name");
+  if (projNameEl) {
+    if (p) {
+      projNameEl.textContent = p.name || "Untitled Project";
+    } else {
+      projNameEl.textContent = "No project selected";
+    }
+  }
+
   if (p && p.id) {
     const idx = projects.findIndex(pr => pr.id === p.id);
     if (idx >= 0) {
@@ -286,6 +296,28 @@ function setupButtons() {
   const aboutClose     = document.getElementById("about-close");
   const manifestEditor = document.getElementById("manifest-editor");
 
+  // NEW: XML toggle buttons and containers
+  const bpmnXmlToggleBtn = document.getElementById("btn-bpmn-toggle-xml");
+  const dmnXmlToggleBtn  = document.getElementById("btn-dmn-toggle-xml");
+  const cmmnXmlToggleBtn = document.getElementById("btn-cmmn-toggle-xml");
+
+  const bpmnXmlContainer = document.getElementById("bpmn-xml-container");
+  const dmnXmlContainer  = document.getElementById("dmn-xml-container");
+  const cmmnXmlContainer = document.getElementById("cmmn-xml-container");
+
+  // NEW: per-type import/export buttons
+  const bpmnImportBtn = document.getElementById("btn-bpmn-import-xml");
+  const dmnImportBtn  = document.getElementById("btn-dmn-import-xml");
+  const cmmnImportBtn = document.getElementById("btn-cmmn-import-xml");
+
+  const bpmnExportBtn = document.getElementById("btn-bpmn-export-xml");
+  const dmnExportBtn  = document.getElementById("btn-dmn-export-xml");
+  const cmmnExportBtn = document.getElementById("btn-cmmn-export-xml");
+
+  const bpmnFileInput = document.getElementById("bpmn-xml-file-input");
+  const dmnFileInput  = document.getElementById("dmn-xml-file-input");
+  const cmmnFileInput = document.getElementById("cmmn-xml-file-input");
+
   if (newBtn) {
     newBtn.addEventListener("click", async () => {
       const name = prompt("Project name:", "New project");
@@ -322,6 +354,76 @@ function setupButtons() {
       });
     });
   }
+
+  // --- XML PREVIEW TOGGLE HELPERS ---
+
+  function setupXmlToggle(btn, container, kind) {
+    if (!btn || !container) return;
+
+    btn.addEventListener("click", async () => {
+      const visible = container.style.display === "block";
+
+      if (visible) {
+        container.style.display = "none";
+        btn.textContent = "Show XML";
+      } else {
+        container.style.display = "block";
+        btn.textContent = "Hide XML";
+        await updateXmlPreview(kind);
+      }
+    });
+  }
+
+  setupXmlToggle(bpmnXmlToggleBtn, bpmnXmlContainer, "bpmn");
+  setupXmlToggle(dmnXmlToggleBtn,  dmnXmlContainer,  "dmn");
+  setupXmlToggle(cmmnXmlToggleBtn, cmmnXmlContainer, "cmmn");
+
+  // --- SINGLE XML IMPORT HELPERS ---
+
+  function setupXmlImport(importBtn, input, kind) {
+    if (!importBtn || !input) return;
+
+    importBtn.addEventListener("click", () => {
+      input.value = "";
+      input.click();
+    });
+
+    input.addEventListener("change", async (event) => {
+      const files = event.target.files;
+      if (!files || !files[0]) return;
+
+      try {
+        await importSingleXml(kind, files[0]);
+        await loadProjectIntoEditors();
+        await updateXmlPreview(kind);
+        showToast(kind.toUpperCase() + " XML imported");
+      } catch (err) {
+        console.error("Import " + kind + " XML failed", err);
+        showToast("Import " + kind.toUpperCase() + " XML failed");
+      }
+    });
+  }
+
+  setupXmlImport(bpmnImportBtn, bpmnFileInput, "bpmn");
+  setupXmlImport(dmnImportBtn,  dmnFileInput,  "dmn");
+  setupXmlImport(cmmnImportBtn, cmmnFileInput, "cmmn");
+
+  // --- SINGLE XML EXPORT HELPERS ---
+
+  function setupXmlExport(exportBtn, kind) {
+    if (!exportBtn) return;
+
+    exportBtn.addEventListener("click", () => {
+      exportSingleXml(kind).catch(err => {
+        console.error("Export " + kind + " XML failed", err);
+        showToast("Export " + kind.toUpperCase() + " XML failed");
+      });
+    });
+  }
+
+  setupXmlExport(bpmnExportBtn, "bpmn");
+  setupXmlExport(dmnExportBtn,  "dmn");
+  setupXmlExport(cmmnExportBtn, "cmmn");
 
   if (aboutBtn && aboutModal) {
     aboutBtn.addEventListener("click", () => {
@@ -411,6 +513,31 @@ function initModelers() {
   });
 
   cmmnModeler = new CmmnCtor({ container: "#cmmn-canvas" });
+
+  // NEW: auto-sync XML + preview when diagrams change
+  if (bpmnModeler && bpmnModeler.on) {
+    bpmnModeler.on("commandStack.changed", () => {
+      updateXmlPreview("bpmn").catch(err =>
+        console.error("Failed to update BPMN XML preview", err)
+      );
+    });
+  }
+
+  if (dmnModeler && dmnModeler.on) {
+    dmnModeler.on("commandStack.changed", () => {
+      updateXmlPreview("dmn").catch(err =>
+        console.error("Failed to update DMN XML preview", err)
+      );
+    });
+  }
+
+  if (cmmnModeler && cmmnModeler.on) {
+    cmmnModeler.on("commandStack.changed", () => {
+      updateXmlPreview("cmmn").catch(err =>
+        console.error("Failed to update CMMN XML preview", err)
+      );
+    });
+  }
 }
 
 async function loadProjectIntoEditors() {
@@ -497,6 +624,27 @@ async function syncProjectXmlFromEditors() {
   }
 }
 
+async function updateXmlPreview(kind) {
+  if (!currentProject) return;
+
+  // First sync all XML from editors back into currentProject
+  await syncProjectXmlFromEditors();
+
+  const map = {
+    bpmn: { key: "bpmnXml", editorId: "bpmn-xml-editor" },
+    dmn:  { key: "dmnXml",  editorId: "dmn-xml-editor" },
+    cmmn: { key: "cmmnXml", editorId: "cmmn-xml-editor" }
+  };
+
+  const cfg = map[kind];
+  if (!cfg) return;
+
+  const ta = document.getElementById(cfg.editorId);
+  if (!ta) return;
+
+  ta.value = currentProject[cfg.key] || "";
+}
+
 // ---------------------------------------------------------------------------
 // View helpers
 // ---------------------------------------------------------------------------
@@ -519,6 +667,85 @@ function fitTabView(tab) {
   } else if (tab === "cmmn") {
     fitModelerViewport(cmmnModeler, "cmmn-canvas");
   }
+}
+
+// ---------------------------------------------------------------------------
+// XML import/export helpers
+// ---------------------------------------------------------------------------
+
+async function importSingleXml(kind, file) {
+  if (!file) return;
+
+  const text = await file.text();
+
+  if (!currentProject) {
+    const proj = createNewProject();
+    setProject(proj);
+  }
+
+  if (kind === "bpmn") {
+    currentProject.bpmnXml = text;
+  } else if (kind === "dmn") {
+    currentProject.dmnXml = text;
+  } else if (kind === "cmmn") {
+    currentProject.cmmnXml = text;
+  }
+
+  const now = new Date().toISOString();
+  currentProject.updatedAt = now;
+  if (currentProject.manifest) {
+    currentProject.manifest.updatedAt = now;
+  }
+
+  // Persist into projects array
+  if (currentProject && currentProject.id) {
+    const idx = projects.findIndex(p => p.id === currentProject.id);
+    if (idx >= 0) {
+      projects[idx] = currentProject;
+    } else {
+      projects.push(currentProject);
+    }
+    saveProjectsToLocalStorage(projects);
+    renderProjectList();
+  }
+}
+
+async function exportSingleXml(kind) {
+  if (!currentProject) {
+    showToast("No project loaded");
+    return;
+  }
+
+  await syncProjectXmlFromEditors();
+
+  let xml = "";
+  let defaultExt = "";
+  if (kind === "bpmn") {
+    xml = currentProject.bpmnXml || EMPTY_BPMN_XML;
+    defaultExt = ".bpmn.xml";
+  } else if (kind === "dmn") {
+    xml = currentProject.dmnXml || EMPTY_DMN_XML;
+    defaultExt = ".dmn.xml";
+  } else if (kind === "cmmn") {
+    xml = currentProject.cmmnXml || EMPTY_CMMN_XML;
+    defaultExt = ".cmmn.xml";
+  } else {
+    return;
+  }
+
+  const name = (currentProject.name || "project") + defaultExt;
+
+  const blob = new Blob([xml], { type: "application/xml" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  URL.revokeObjectURL(url);
 }
 
 // ---------------------------------------------------------------------------
