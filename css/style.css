@@ -15,12 +15,24 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 8px 16px;
-  border-bottom: 1px solid #ddd;
-  background: #f7f7fb;
+  background: #0d6efd;
+  color: #fff;
+  gap: 12px;
 }
 
 .app-logo {
   font-weight: 600;
+}
+
+/* NEW: project name badge */
+.app-project-name {
+  flex: 1;
+  text-align: center;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .app-actions button {
@@ -82,7 +94,30 @@ body {
 
 .modeler-canvas {
   width: 100%;
-  height: calc(100vh - 110px); /* adjust if header height changes */
+  height: calc(100vh - 180px); /* adjust if header height changes */
+}
+
+/* XML preview panel under each canvas */
+.xml-container {
+  margin-top: 8px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background: #f8f9fa;
+  padding: 6px;
+}
+
+.xml-editor {
+  width: 100%;
+  height: 200px;
+  border: none;
+  outline: none;
+  resize: vertical;
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 12px;
+  background: #ffffff;
+  padding: 6px;
+  box-sizing: border-box;
 }
 
 #tab-dmn .modeler-canvas {
