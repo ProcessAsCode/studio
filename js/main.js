@@ -1,4 +1,5 @@
-// main.js – Step 3: BPMN + DMN + CMMN editors + basic project/manifest
+// Algomation Studio - Frontend-only UAPF editor
+// BPMN / DMN / CMMN editors + manifest + UAPF export (steps 1–4)
 
 let bpmnModeler = null;
 let dmnModeler = null;
@@ -6,9 +7,11 @@ let cmmnModeler = null;
 
 let currentProject = null;
 
-// --- Default XML templates --------------------------------------------------
+// ---------------------------------------------------------------------------
+// Default XML templates
+// ---------------------------------------------------------------------------
 
-// Minimal BPMN diagram
+// Minimal BPMN diagram (BPMN 2.0)
 const EMPTY_BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                   xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -34,7 +37,7 @@ const EMPTY_BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
 </bpmn:definitions>
 `;
 
-// Minimal DMN decision table
+// Minimal DMN decision table (DMN 1.3)
 const EMPTY_DMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
              xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/"
@@ -64,7 +67,7 @@ const EMPTY_DMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
 </definitions>
 `;
 
-// Minimal CMMN case model (without DI)
+// Minimal CMMN case model (no DI / diagram section – keep it simple)
 const EMPTY_CMMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <cmmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                   xmlns:cmmn="http://www.omg.org/spec/CMMN/20151109/MODEL"
@@ -78,7 +81,9 @@ const EMPTY_CMMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
 </cmmn:definitions>
 `;
 
-// --- Project helpers --------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Project helpers
+// ---------------------------------------------------------------------------
 
 function createNewProject() {
   const id = "proj-" + Date.now();
@@ -87,6 +92,7 @@ function createNewProject() {
   return {
     id,
     name: "Untitled Project",
+    description: "Algomation Studio demo project.",
     createdAt: nowIso,
     updatedAt: nowIso,
     bpmnXml: EMPTY_BPMN_XML,
@@ -114,91 +120,82 @@ function createNewProject() {
   };
 }
 
-function updateManifestEditor() {
-  const manifestEditor = document.getElementById("manifest-editor");
-  if (!manifestEditor || !currentProject) return;
-
-  manifestEditor.value = JSON.stringify(currentProject.manifest, null, 2);
-}
-
 function setProject(project) {
   currentProject = project;
-  if (!currentProject) return;
-
-  currentProject.updatedAt = new Date().toISOString();
-  if (currentProject.manifest) {
-    currentProject.manifest.updatedAt = currentProject.updatedAt;
-  }
-
   updateManifestEditor();
 }
 
-// --- App init ---------------------------------------------------------------
+function updateManifestEditor() {
+  const editor = document.getElementById("manifest-editor");
+  if (!editor) return;
 
-document.addEventListener("DOMContentLoaded", () => {
-  setupTabs();
-  setupButtons();
-  initBpmnModeler();
-  initDmnModeler();
-  initCmmnModeler();
+  if (!currentProject || !currentProject.manifest) {
+    editor.value = "";
+    return;
+  }
 
-  // Initialize first project
-  const proj = createNewProject();
-  setProject(proj);
-  loadProjectIntoEditors();
-});
+  editor.value = JSON.stringify(currentProject.manifest, null, 2);
+}
 
-// --- Tabs & buttons ---------------------------------------------------------
+// ---------------------------------------------------------------------------
+// UI setup
+// ---------------------------------------------------------------------------
 
 function setupTabs() {
-  const buttons = document.querySelectorAll(".tab-button");
-  const panels = document.querySelectorAll(".tab-panel");
+  const tabButtons = document.querySelectorAll(".tab-button");
+  const tabPanels = document.querySelectorAll(".tab-panel");
 
-  buttons.forEach((btn) => {
+  tabButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const tab = btn.getAttribute("data-tab");
+      if (!tab) return;
 
-      buttons.forEach((b) => b.classList.remove("active"));
-      panels.forEach((p) => p.classList.remove("active"));
+      tabButtons.forEach((b) => b.classList.remove("active"));
+      tabPanels.forEach((p) => p.classList.remove("active"));
 
       btn.classList.add("active");
-      document.getElementById(`tab-${tab}`).classList.add("active");
+      const panel = document.getElementById(`tab-${tab}`);
+      if (panel) {
+        panel.classList.add("active");
+      }
 
-      // Refit the currently visible canvas to avoid non-finite zoom values
       fitTabView(tab);
     });
   });
 }
 
 function setupButtons() {
-  document
-    .getElementById("btn-new-project")
-    .addEventListener("click", onNewProject);
-
-  document
-    .getElementById("btn-import-uapf")
-    .addEventListener("click", () => {
-      document.getElementById("uapf-file-input").click();
-    });
-
-  document
-    .getElementById("uapf-file-input")
-    .addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        // UAPF import logic will be implemented in a later step
-        alert("UAPF import not implemented yet.");
-        e.target.value = "";
-      }
-    });
-
-  document
-    .getElementById("btn-export-uapf")
-    .addEventListener("click", () => {
-      exportUapf();
-    });
-
+  const btnNew = document.getElementById("btn-new-project");
+  const btnImport = document.getElementById("btn-import-uapf");
+  const btnExport = document.getElementById("btn-export-uapf");
+  const fileInput = document.getElementById("uapf-file-input");
   const manifestEditor = document.getElementById("manifest-editor");
+
+  if (btnNew) {
+    btnNew.addEventListener("click", () => {
+      onNewProject().catch((err) => console.error("New project error", err));
+    });
+  }
+
+  if (btnImport && fileInput) {
+    btnImport.addEventListener("click", () => {
+      fileInput.value = "";
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", (event) => {
+      onImportUapf(event).catch((err) =>
+        console.error("Import UAPF error", err)
+      );
+    });
+  }
+
+  if (btnExport) {
+    btnExport.addEventListener("click", () => {
+      exportUapf().catch((err) => console.error("Export UAPF error", err));
+    });
+  }
+
   if (manifestEditor) {
     manifestEditor.addEventListener("input", () => {
       if (!currentProject) return;
@@ -206,48 +203,15 @@ function setupButtons() {
         const parsed = JSON.parse(manifestEditor.value);
         currentProject.manifest = parsed;
       } catch (err) {
-        // ignore invalid JSON while typing
+        // keep last valid manifest; do not spam console
       }
     });
   }
 }
 
-function isCanvasVisible(canvasEl) {
-  if (!canvasEl) return false;
-  const rect = canvasEl.getBoundingClientRect();
-  return rect.width > 0 && rect.height > 0;
-}
-
-function fitModelerViewport(modeler, canvasId) {
-  if (!modeler) return;
-  const canvasEl = document.getElementById(canvasId);
-  if (!isCanvasVisible(canvasEl)) return;
-
-  try {
-    const canvas = modeler.get("canvas");
-    canvas.zoom("fit-viewport");
-  } catch (err) {
-    console.warn("Could not fit viewport for", canvasId, err);
-  }
-}
-
-function fitTabView(tab) {
-  if (tab === "bpmn") {
-    fitModelerViewport(bpmnModeler, "bpmn-canvas");
-  } else if (tab === "cmmn") {
-    fitModelerViewport(cmmnModeler, "cmmn-canvas");
-  } else if (tab === "dmn") {
-    // DMN handles view activation separately but we still make sure canvases render
-    if (dmnModeler) {
-      const activeView = dmnModeler.getActiveView();
-      if (activeView) {
-        dmnModeler.open(activeView);
-      }
-    }
-  }
-}
-
-// --- BPMN -------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Modeler init
+// ---------------------------------------------------------------------------
 
 async function initBpmnModeler() {
   const container = document.getElementById("bpmn-canvas");
@@ -266,8 +230,6 @@ async function initBpmnModeler() {
     container: "#bpmn-canvas"
   });
 }
-
-// --- DMN --------------------------------------------------------------------
 
 async function initDmnModeler() {
   const container = document.getElementById("dmn-canvas");
@@ -293,8 +255,6 @@ async function initDmnModeler() {
   });
 }
 
-// --- CMMN -------------------------------------------------------------------
-
 async function initCmmnModeler() {
   const container = document.getElementById("cmmn-canvas");
   if (!container) {
@@ -313,7 +273,9 @@ async function initCmmnModeler() {
   });
 }
 
-// --- Load project XML into editors -----------------------------------------
+// ---------------------------------------------------------------------------
+// Load project XML into editors
+// ---------------------------------------------------------------------------
 
 async function loadProjectIntoEditors() {
   if (!currentProject) return;
@@ -331,11 +293,16 @@ async function loadProjectIntoEditors() {
   // DMN
   if (dmnModeler && currentProject.dmnXml) {
     try {
-      await dmnModeler.importXML(currentProject.dmnXml);
-      // dmn-js uses active viewer for different views (DRD, decision table etc.)
-      const activeView = dmnModeler.getActiveView();
-      if (activeView) {
-        dmnModeler.open(activeView);
+      const { warnings } = await dmnModeler.importXML(currentProject.dmnXml);
+      if (warnings && warnings.length) {
+        console.warn("DMN import warnings", warnings);
+      }
+
+      const views = dmnModeler.getViews && dmnModeler.getViews();
+      if (views && views.length) {
+        const activeView = dmnModeler.getActiveView && dmnModeler.getActiveView();
+        const viewToOpen = activeView || views[0];
+        await dmnModeler.open(viewToOpen);
       }
     } catch (err) {
       console.error("Error importing DMN XML", err);
@@ -355,15 +322,58 @@ async function loadProjectIntoEditors() {
   updateManifestEditor();
 }
 
-// --- New project ------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// View helpers
+// ---------------------------------------------------------------------------
+
+function isCanvasVisible(canvasEl) {
+  if (!canvasEl) return false;
+  const style = window.getComputedStyle(canvasEl);
+  if (style.display === "none" || style.visibility === "hidden") {
+    return false;
+  }
+  const rect = canvasEl.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0;
+}
+
+function fitModelerViewport(modeler, canvasId) {
+  if (!modeler) return;
+  const canvasEl = document.getElementById(canvasId);
+  if (!isCanvasVisible(canvasEl)) return;
+
+  try {
+    const canvas = modeler.get("canvas");
+    if (canvas && typeof canvas.zoom === "function") {
+      canvas.zoom("fit-viewport");
+    }
+  } catch (err) {
+    console.warn("Could not fit viewport for", canvasId, err);
+  }
+}
+
+function fitTabView(tab) {
+  if (tab === "bpmn") {
+    fitModelerViewport(bpmnModeler, "bpmn-canvas");
+  } else if (tab === "dmn") {
+    // DMN uses its own internal layout; nothing special for now
+  } else if (tab === "cmmn") {
+    fitModelerViewport(cmmnModeler, "cmmn-canvas");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// New project
+// ---------------------------------------------------------------------------
 
 async function onNewProject() {
-  const proj = createNewProject();
-  setProject(proj);
+  const project = createNewProject();
+  setProject(project);
   await loadProjectIntoEditors();
 }
 
-// --- Sync editors -> project XML -------------------------------------------
+// ---------------------------------------------------------------------------
+// Sync editors -> project XML
+// ---------------------------------------------------------------------------
 
 async function syncProjectXmlFromEditors() {
   if (!currentProject) return;
@@ -398,7 +408,6 @@ async function syncProjectXmlFromEditors() {
     }
   }
 
-  // Update timestamps
   const nowIso = new Date().toISOString();
   currentProject.updatedAt = nowIso;
   if (currentProject.manifest) {
@@ -407,7 +416,9 @@ async function syncProjectXmlFromEditors() {
   updateManifestEditor();
 }
 
-// --- Export UAPF (ZIP with manifest + BPMN/DMN/CMMN) -----------------------
+// ---------------------------------------------------------------------------
+// UAPF export (ZIP)
+// ---------------------------------------------------------------------------
 
 async function exportUapf() {
   if (!currentProject) {
@@ -421,7 +432,6 @@ async function exportUapf() {
     return;
   }
 
-  // Make sure project XML is up to date
   await syncProjectXmlFromEditors();
 
   const zip = new JSZip();
@@ -443,11 +453,11 @@ async function exportUapf() {
 
   try {
     const blob = await zip.generateAsync({ type: "blob" });
-    const projectName = (currentProject.name || "algomation-project").replace(
+    const safeName = (currentProject.name || "algomation-project").replace(
       /[^a-z0-9_\-]+/gi,
       "_"
     );
-    const filename = projectName + ".uapf";
+    const filename = safeName + ".uapf";
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -462,3 +472,33 @@ async function exportUapf() {
     alert("Failed to export UAPF. See console for details.");
   }
 }
+
+// ---------------------------------------------------------------------------
+// UAPF import (stub for now)
+// ---------------------------------------------------------------------------
+
+async function onImportUapf(event) {
+  const file = event && event.target && event.target.files && event.target.files[0];
+  if (!file) return;
+
+  // Step 4 scope: export only. Import will be implemented in a later step.
+  alert("UAPF import is not implemented yet in this demo build.");
+}
+
+// ---------------------------------------------------------------------------
+// App bootstrap
+// ---------------------------------------------------------------------------
+
+document.addEventListener("DOMContentLoaded", async () => {
+  setupTabs();
+  setupButtons();
+
+  const project = createNewProject();
+  setProject(project);
+
+  await initBpmnModeler();
+  await initDmnModeler();
+  await initCmmnModeler();
+
+  await loadProjectIntoEditors();
+});
