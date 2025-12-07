@@ -453,6 +453,21 @@ async function loadProjectIntoEditors() {
   updateManifestEditor();
 }
 
+function saveCmmnXml(modeler, options = { format: true }) {
+  return new Promise((resolve, reject) => {
+    if (!modeler) {
+      return resolve({ xml: null });
+    }
+
+    modeler.saveXML(options, (err, xml) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve({ xml });
+    });
+  });
+}
+
 async function syncProjectXmlFromEditors() {
   if (!currentProject) return;
 
@@ -467,8 +482,12 @@ async function syncProjectXmlFromEditors() {
   }
 
   if (cmmnModeler) {
-    const { xml } = await cmmnModeler.saveXML({ format: true });
-    currentProject.cmmnXml = xml;
+    try {
+      const { xml } = await saveCmmnXml(cmmnModeler, { format: true });
+      currentProject.cmmnXml = xml;
+    } catch (err) {
+      console.error("Failed to save CMMN XML", err);
+    }
   }
 
   const now = new Date().toISOString();
