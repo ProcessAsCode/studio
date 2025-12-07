@@ -80,7 +80,7 @@ body {
 
 .modeler-canvas {
   width: 100%;
-  height: calc(100vh - 100px); /* tweak when needed */
+  height: calc(100vh - 110px); /* adjust if header height changes */
 }
 
 .manifest-editor {
