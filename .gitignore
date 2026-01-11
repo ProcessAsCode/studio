@@ -1,0 +1,24 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Data & Logs
+data/
+logs/
+backups/
+
+# Backend
+backend/node_modules/
+backend/uploads/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
