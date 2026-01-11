@@ -7,7 +7,11 @@ class AuthManager {
 
   async init() {
     try {
-      this.auth0Client = await createAuth0Client({
+      if (typeof window.createAuth0Client !== 'function') {
+        throw new Error('Auth0 SDK not loaded: createAuth0Client is missing');
+      }
+
+      this.auth0Client = await window.createAuth0Client({
         domain: 'dev-4yciirk0gltvh1su.eu.auth0.com',
         clientId: 'xb1vtp5GSHmXloJ9bfS1mTmPdLpTX5mX',
         authorizationParams: {
