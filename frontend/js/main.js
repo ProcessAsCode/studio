@@ -10,7 +10,9 @@ import {
   uiSelectProject,
   uiShowToast,
   uiSetProjectName,
-  uiSetUser
+  uiSetUser,
+  uiSetAuthReady,
+  uiShowAuthError
 } from './ui.js';
 
 const MODE_GUEST = 'guest';
@@ -397,11 +399,33 @@ function setupButtons() {
   setupXmlExport(cmmnExportBtn, 'cmmn');
 
   if (signInBtn) {
-    signInBtn.addEventListener('click', () => authManager.login());
+    signInBtn.addEventListener('click', async () => {
+      try {
+        if (!authManager.auth0Client) {
+          uiShowToast('Auth not ready. Please refresh.');
+          return;
+        }
+        await authManager.login();
+      } catch (e) {
+        console.error(e);
+        uiShowToast('Login failed. Check console.');
+      }
+    });
   }
 
   if (signUpBtn) {
-    signUpBtn.addEventListener('click', () => authManager.signup());
+    signUpBtn.addEventListener('click', async () => {
+      try {
+        if (!authManager.auth0Client) {
+          uiShowToast('Auth not ready. Please refresh.');
+          return;
+        }
+        await authManager.signup();
+      } catch (e) {
+        console.error(e);
+        uiShowToast('Signup failed. Check console.');
+      }
+    });
   }
 
   if (logoutBtn) {
@@ -939,11 +963,16 @@ async function initApp() {
   setupButtons();
   setupShortcuts();
   uiSetMode('loading');
+  uiSetAuthReady(false);
 
   try {
     await authManager.init();
+    uiSetAuthReady(true);
   } catch (e) {
     console.error('Auth init failed', e);
+    uiShowAuthError('Authentication failed to initialize. Please refresh or contact admin.');
+    await loadGuestDemo();
+    return;
   }
 
   if (authManager.isAuthenticated) {

@@ -50,6 +50,26 @@ export function uiSetMode(mode) {
   });
 }
 
+export function uiSetAuthReady(isReady) {
+  const signInBtn = document.getElementById('btn-sign-in');
+  const signUpBtn = document.getElementById('btn-sign-up');
+
+  if (signInBtn) {
+    signInBtn.disabled = !isReady;
+  }
+
+  if (signUpBtn) {
+    signUpBtn.disabled = !isReady;
+  }
+}
+
+export function uiShowAuthError(message) {
+  const demoBanner = document.getElementById('demo-mode-banner');
+  if (!demoBanner) return;
+  demoBanner.textContent = message;
+  demoBanner.classList.remove('hidden');
+}
+
 export function uiRenderProjectList({ items, activeId, emptyMessage, onSelect }) {
   const list = document.getElementById('project-list');
   if (!list) return;
