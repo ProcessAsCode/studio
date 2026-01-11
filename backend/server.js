@@ -253,10 +253,12 @@ app.post('/api/projects/import', checkJwt, upload.single('uapf'), async (req, re
 });
 
 app.use((err, req, res, next) => {
-  logger.error('Unhandled error:', err);
-  if (err.name === 'UnauthorizedError' || err.name === 'InvalidRequestError') {
+  // Do not log auth missing-token as "Unhandled error" at error level
+  if (err?.name === 'UnauthorizedError' || err?.name === 'InvalidRequestError') {
     return res.status(401).json({ error: 'Invalid or missing token' });
   }
+
+  logger.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
