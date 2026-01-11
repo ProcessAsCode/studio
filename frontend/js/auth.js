@@ -16,7 +16,7 @@ class AuthManager {
       });
       if (window.location.search.includes('code=')) {
         await this.auth0Client.handleRedirectCallback();
-        window.history.replaceState({}, document.title, '/');
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
       this.isAuthenticated = await this.auth0Client.isAuthenticated();
       if (this.isAuthenticated) {
