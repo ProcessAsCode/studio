@@ -172,7 +172,8 @@ function createNewProject(name = "Untitled Project", description = "Algomation S
   };
 }
 
-function setProject(p) {
+function setProject(p, options = {}) {
+  const { persist = true, updateList = true } = options;
   currentProject = p;
 
   // NEW: update header project name
@@ -185,14 +186,16 @@ function setProject(p) {
     }
   }
 
-  if (p && p.id) {
+  if (p && p.id && updateList) {
     const idx = projects.findIndex(pr => pr.id === p.id);
     if (idx >= 0) {
       projects[idx] = p;
     } else {
       projects.push(p);
     }
-    saveProjectsToLocalStorage(projects);
+    if (persist) {
+      saveProjectsToLocalStorage(projects);
+    }
     renderProjectList();
   }
 
@@ -865,31 +868,39 @@ async function initApp() {
   setupButtons();
   setupShortcuts();
 
-  // Initialize authentication
-  try {
-    await authManager.init();
-    console.log('Auth initialized, loading projects from API...');
+  // Initialize authentication (FAIL CLOSED: no offline fallback in production)
+  await authManager.init();
 
-    // Load projects from backend API
-    const response = await apiClient.getProjects();
-    projects = response.projects || [];
-  } catch (error) {
-    console.error('Auth or API failed, falling back to localStorage:', error);
-    projects = loadProjectsFromLocalStorage();
+  // If init() triggers login redirect, the browser navigates away;
+  // this is here as a defensive stop if execution continues.
+  if (!authManager.isAuthenticated) {
+    return;
   }
 
+  console.log('Authenticated, loading projects from API...');
+
+  // Load projects from backend API ONLY
+  const response = await apiClient.getProjects();
+  projects = response.projects || [];
+
+  // Do NOT auto-create offline projects in production.
+  // If you want an empty state, render empty list and prompt user to create first project.
   if (!projects.length) {
+    renderProjectList();
+    initModelers();
+
+    // Create a clean empty project in-memory (NOT saved to localStorage)
     const proj = createNewProject();
-    projects = [proj];
-    saveProjectsToLocalStorage(projects);
-    setProject(proj);
-  } else {
-    setProject(projects[0]);
+    setProject(proj, { persist: false, updateList: false });
+    await loadProjectIntoEditors();
+    return;
   }
+
+  setProject(projects[0]);
 
   renderProjectList();
   initModelers();
-  loadProjectIntoEditors();
+  await loadProjectIntoEditors();
 }
 
 document.addEventListener("DOMContentLoaded", initApp);
