@@ -1,6 +1,9 @@
 // Algomation Studio – clean implementation with BPMN / DMN / CMMN modelers,
 // UAPF import/export, localStorage projects, About modal and toasts.
 
+import { authManager } from './auth.js';
+import { apiClient } from './api-client.js';
+
 let bpmnModeler = null;
 let dmnModeler = null;
 let cmmnModeler = null;
@@ -857,12 +860,23 @@ async function importUapf(file) {
 // App init
 // ---------------------------------------------------------------------------
 
-function initApp() {
+async function initApp() {
   setupTabs();
   setupButtons();
   setupShortcuts();
 
-  projects = loadProjectsFromLocalStorage();
+  // Initialize authentication
+  try {
+    await authManager.init();
+    console.log('Auth initialized, loading projects from API...');
+
+    // Load projects from backend API
+    const response = await apiClient.getProjects();
+    projects = response.projects || [];
+  } catch (error) {
+    console.error('Auth or API failed, falling back to localStorage:', error);
+    projects = loadProjectsFromLocalStorage();
+  }
 
   if (!projects.length) {
     const proj = createNewProject();
