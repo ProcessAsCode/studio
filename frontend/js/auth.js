@@ -4,6 +4,7 @@ class AuthManager {
     this.user = null;
     this.isAuthenticated = false;
   }
+
   async init() {
     try {
       this.auth0Client = await createAuth0Client({
@@ -14,31 +15,49 @@ class AuthManager {
           audience: 'https://api.algomation.io'
         }
       });
+
       if (window.location.search.includes('code=')) {
         await this.auth0Client.handleRedirectCallback();
         window.history.replaceState({}, document.title, window.location.pathname);
       }
+
       this.isAuthenticated = await this.auth0Client.isAuthenticated();
       if (this.isAuthenticated) {
         this.user = await this.auth0Client.getUser();
         console.log('Authenticated:', this.user.email);
-      } else {
-        await this.login();
       }
+
       return this.isAuthenticated;
     } catch (error) {
       console.error('Auth failed:', error);
       throw error;
     }
   }
-  async login() { await this.auth0Client.loginWithRedirect(); }
-  async logout() { await this.auth0Client.logout({ logoutParams: { returnTo: window.location.origin } }); }
-  async getAccessToken() {
-    if (!this.isAuthenticated) return null;
-    try { return await this.auth0Client.getTokenSilently(); }
-    catch (error) { await this.login(); return null; }
+
+  async login() {
+    await this.auth0Client.loginWithRedirect();
   }
-  getUser() { return this.user; }
+
+  async signup() {
+    await this.auth0Client.loginWithRedirect({
+      authorizationParams: { screen_hint: 'signup' }
+    });
+  }
+
+  async logout() {
+    await this.auth0Client.logout({
+      logoutParams: { returnTo: window.location.origin }
+    });
+  }
+
+  async getToken() {
+    return await this.auth0Client.getTokenSilently();
+  }
+
+  getUser() {
+    return this.user;
+  }
 }
+
 export const authManager = new AuthManager();
 window.authManager = authManager;

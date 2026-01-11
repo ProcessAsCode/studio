@@ -44,20 +44,59 @@
     </div>
 
     <div class="app-actions">
-      <button id="btn-new-project" class="btn btn-sm btn-primary me-2">
-        New Project
-      </button>
-      <button id="btn-import-uapf" class="btn btn-sm btn-outline-secondary me-2">
-        Import UAPF
-      </button>
-      <button id="btn-export-uapf" class="btn btn-sm btn-outline-secondary me-2">
-        Export UAPF
-      </button>
-      <button id="btn-about" class="btn btn-sm btn-outline-info">
-        About
-      </button>
+      <div class="project-actions">
+        <button id="btn-new-project" class="btn btn-sm btn-primary me-2">
+          New Project
+        </button>
+        <button id="btn-save-project" class="btn btn-sm btn-outline-primary me-2">
+          Save
+        </button>
+        <button id="btn-delete-project" class="btn btn-sm btn-outline-danger me-2">
+          Delete
+        </button>
+        <button id="btn-import-uapf" class="btn btn-sm btn-outline-secondary me-2">
+          Import UAPF
+        </button>
+        <button id="btn-export-uapf" class="btn btn-sm btn-outline-secondary me-2">
+          Export UAPF
+        </button>
+        <button id="btn-about" class="btn btn-sm btn-outline-info">
+          About
+        </button>
+      </div>
+
+      <div id="auth-actions" class="auth-actions">
+        <button id="btn-sign-in" class="btn btn-sm btn-light me-2">
+          Sign in
+        </button>
+        <button id="btn-sign-up" class="btn btn-sm btn-outline-light">
+          Sign up
+        </button>
+      </div>
+
+      <div id="user-menu" class="user-menu dropdown hidden">
+        <button
+          class="btn btn-sm btn-light dropdown-toggle"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+        >
+          Hello, <span id="user-greeting">User</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li>
+            <button id="btn-profile" class="dropdown-item">Profile</button>
+          </li>
+          <li>
+            <button id="btn-logout" class="dropdown-item">Logout</button>
+          </li>
+        </ul>
+      </div>
     </div>
   </header>
+
+  <div id="demo-mode-banner" class="demo-banner hidden">
+    Demo mode (read-only). Sign in to create your workspace.
+  </div>
 
   <main class="app-main">
     <aside class="app-sidebar">
