@@ -7,8 +7,8 @@ class AuthManager {
   async init() {
     try {
       this.auth0Client = await createAuth0Client({
-        domain: 'YOUR_AUTH0_DOMAIN',
-        clientId: 'YOUR_CLIENT_ID',
+        domain: 'dev-4yciirk0gltvh1su.eu.auth0.com',
+        clientId: 'MISSING_CLIENT_ID_SEE_AUTH0_DASHBOARD',
         authorizationParams: {
           redirect_uri: window.location.origin,
           audience: 'https://api.algomation.io'
