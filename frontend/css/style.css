@@ -18,6 +18,7 @@ body {
   background: #0d6efd;
   color: #fff;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .app-logo {
@@ -35,8 +36,32 @@ body {
   text-overflow: ellipsis;
 }
 
-.app-actions button {
-  margin-left: 8px;
+.app-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.project-actions,
+.auth-actions,
+.user-menu {
+  display: flex;
+  align-items: center;
+}
+
+.auth-actions.hidden,
+.user-menu.hidden,
+.demo-banner.hidden {
+  display: none;
+}
+
+.demo-banner {
+  background: #fff3cd;
+  color: #664d03;
+  padding: 6px 16px;
+  border-bottom: 1px solid #ffe69c;
+  font-size: 0.9rem;
 }
 
 .app-main {
@@ -191,7 +216,7 @@ body {
   z-index: 1100;
 }
 
-.toast {
+.toast-item {
   background: #fff;
   border: 1px solid #e3e3e3;
   border-radius: 6px;
@@ -200,7 +225,7 @@ body {
   animation: fadeIn 0.2s ease-out;
 }
 
-.toast.fade-out {
+.toast-item.fade-out {
   opacity: 0;
   transition: opacity 0.3s ease-out;
 }

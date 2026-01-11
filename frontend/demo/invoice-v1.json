@@ -1,0 +1,17 @@
+{
+  "manifest": {
+    "uapfVersion": "1.0.0",
+    "projectId": "invoice-v1",
+    "name": "Invoice-to-Pay (Example)",
+    "description": "Read-only demo of invoice approval.",
+    "models": {
+      "bpmn": [{ "id": "Process_main", "file": "bpmn/main.bpmn.xml" }],
+      "dmn": [{ "id": "Decision_main", "file": "dmn/main.dmn.xml" }],
+      "cmmn": [{ "id": "Case_main", "file": "cmmn/main.cmmn.xml" }]
+    },
+    "links": []
+  },
+  "bpmnXml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\" id=\"Definitions_1\" targetNamespace=\"http://algomation.io/bpmn\">\n  <bpmn:process id=\"Process_main\" isExecutable=\"false\">\n    <bpmn:startEvent id=\"StartEvent_1\" name=\"Start\" />\n  </bpmn:process>\n</bpmn:definitions>",
+  "dmnXml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<definitions xmlns=\"https://www.omg.org/spec/DMN/20191111/MODEL/\" id=\"definitions\" name=\"Demo Decision\" namespace=\"http://algomation.io/dmn\">\n  <decision id=\"Decision_main\" name=\"Demo Decision\" />\n</definitions>",
+  "cmmnXml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<definitions xmlns=\"http://www.omg.org/spec/CMMN/20151109/MODEL\" id=\"Definitions_1\" targetNamespace=\"http://algomation.io/cmmn\">\n  <case id=\"Case_main\" name=\"Demo Case\" />\n</definitions>"
+}

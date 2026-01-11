@@ -1,0 +1,18 @@
+{
+  "examples": [
+    {
+      "id": "permit-v1",
+      "title": "Building Permit (Example)",
+      "description": "Read-only demo of a municipal permit process.",
+      "file": "permit-v1.json",
+      "tags": ["Public Sector", "Permit", "BPMN"]
+    },
+    {
+      "id": "invoice-v1",
+      "title": "Invoice-to-Pay (Example)",
+      "description": "Read-only demo of invoice approval.",
+      "file": "invoice-v1.json",
+      "tags": ["Finance", "DMN"]
+    }
+  ]
+}

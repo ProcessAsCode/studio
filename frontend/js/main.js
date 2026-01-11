@@ -1,15 +1,37 @@
-// Algomation Studio – clean implementation with BPMN / DMN / CMMN modelers,
-// UAPF import/export, localStorage projects, About modal and toasts.
+// Algomation Studio – auth + demo mode implementation
 
 import { authManager } from './auth.js';
 import { apiClient } from './api-client.js';
+import { loadDemoCatalog, loadDemoProjectById } from './demo.js';
+import { renderBpmnViewer, renderDmnViewer, renderCmmnViewer, destroyViewers } from './viewers.js';
+import {
+  uiSetMode,
+  uiRenderProjectList,
+  uiSelectProject,
+  uiShowToast,
+  uiSetProjectName,
+  uiSetUser
+} from './ui.js';
+
+const MODE_GUEST = 'guest';
+const MODE_AUTH = 'auth';
+
+const APP = {
+  mode: 'guest',
+  projects: [],
+  currentProjectId: null,
+  currentProject: null,
+  demo: { catalog: [], currentDemoId: null },
+  user: null
+};
+
+window.APP = APP;
+
+const DEV_OFFLINE_OK = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
 let bpmnModeler = null;
 let dmnModeler = null;
 let cmmnModeler = null;
-
-let currentProject = null;
-let projects = [];
 
 // ---------------------------------------------------------------------------
 // Default XML templates
@@ -110,25 +132,29 @@ const EMPTY_CMMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
 // Local storage helpers
 // ---------------------------------------------------------------------------
 
-const LS_KEY_PROJECTS = "algomationStudio.projects";
+const LS_KEY_PROJECTS = 'algomationStudio.projects';
 
+// LEGACY: dev-only fallback; not used in production
 function loadProjectsFromLocalStorage() {
+  if (!DEV_OFFLINE_OK) return [];
   try {
     const raw = localStorage.getItem(LS_KEY_PROJECTS);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
   } catch (err) {
-    console.warn("Failed to load projects from localStorage", err);
+    console.warn('Failed to load projects from localStorage', err);
     return [];
   }
 }
 
+// LEGACY: dev-only fallback; not used in production
 function saveProjectsToLocalStorage(arr) {
+  if (!DEV_OFFLINE_OK) return;
   try {
     localStorage.setItem(LS_KEY_PROJECTS, JSON.stringify(arr));
   } catch (err) {
-    console.warn("Failed to save projects to localStorage", err);
+    console.warn('Failed to save projects to localStorage', err);
   }
 }
 
@@ -136,8 +162,8 @@ function saveProjectsToLocalStorage(arr) {
 // Project helpers
 // ---------------------------------------------------------------------------
 
-function createNewProject(name = "Untitled Project", description = "Algomation Studio project") {
-  const id = "proj-" + Date.now();
+function createNewProject(name = 'Untitled Project', description = 'Algomation Studio project') {
+  const id = 'proj-' + Date.now();
   const now = new Date().toISOString();
 
   return {
@@ -150,20 +176,20 @@ function createNewProject(name = "Untitled Project", description = "Algomation S
     dmnXml: EMPTY_DMN_XML,
     cmmnXml: EMPTY_CMMN_XML,
     manifest: {
-      uapfVersion: "1.0.0",
+      uapfVersion: '1.0.0',
       projectId: id,
       name,
       description,
       models: {
-        bpmn: [{ id: "Process_main", file: "bpmn/main.bpmn.xml" }],
-        dmn: [{ id: "Decision_main", file: "dmn/main.dmn.xml" }],
-        cmmn: [{ id: "Case_main", file: "cmmn/main.cmmn.xml" }]
+        bpmn: [{ id: 'Process_main', file: 'bpmn/main.bpmn.xml' }],
+        dmn: [{ id: 'Decision_main', file: 'dmn/main.dmn.xml' }],
+        cmmn: [{ id: 'Case_main', file: 'cmmn/main.cmmn.xml' }]
       },
       links: [
         {
-          from: { type: "bpmn", id: "Task_1" },
-          to:   { type: "dmn",  id: "Decision_main" },
-          relation: "uses-decision"
+          from: { type: 'bpmn', id: 'Task_1' },
+          to: { type: 'dmn', id: 'Decision_main' },
+          relation: 'uses-decision'
         }
       ],
       createdAt: now,
@@ -172,99 +198,24 @@ function createNewProject(name = "Untitled Project", description = "Algomation S
   };
 }
 
-function setProject(p, options = {}) {
-  const { persist = true, updateList = true } = options;
-  currentProject = p;
+function getCurrentProject() {
+  return APP.currentProject;
+}
 
-  // NEW: update header project name
-  const projNameEl = document.getElementById("current-project-name");
-  if (projNameEl) {
-    if (p) {
-      projNameEl.textContent = p.name || "Untitled Project";
-    } else {
-      projNameEl.textContent = "No project selected";
-    }
-  }
+function setCurrentProject(project, options = {}) {
+  const { updateList = true } = options;
+  APP.currentProject = project;
+  APP.currentProjectId = project ? project.id : null;
 
-  if (p && p.id && updateList) {
-    const idx = projects.findIndex(pr => pr.id === p.id);
+  if (project && updateList) {
+    const idx = APP.projects.findIndex((pr) => pr.id === project.id);
     if (idx >= 0) {
-      projects[idx] = p;
-    } else {
-      projects.push(p);
-    }
-    if (persist && location.hostname === "localhost") {
-      saveProjectsToLocalStorage(projects);
-    }
-    renderProjectList();
-  }
-
-  updateManifestEditor();
-}
-
-function renderProjectList() {
-  const list = document.getElementById("project-list");
-  if (!list) return;
-
-  list.innerHTML = "";
-
-  if (!projects.length) {
-    const li = document.createElement("li");
-    li.textContent = "No projects yet";
-    list.appendChild(li);
-    return;
-  }
-
-  projects.forEach((p) => {
-    const li = document.createElement("li");
-    li.textContent = p.name || p.id;
-    li.dataset.projectId = p.id;
-    li.classList.add("project-item", "py-1", "px-2");
-
-    if (currentProject && currentProject.id === p.id) {
-      li.classList.add("active");
-    }
-
-    li.addEventListener("click", async () => {
-      const target = projects.find(x => x.id === p.id);
-      if (!target) return;
-      setProject(target);
-      await loadProjectIntoEditors();
-    });
-
-    list.appendChild(li);
-  });
-}
-
-function updateManifestEditor() {
-  const editor = document.getElementById("manifest-editor");
-  const linksContainer = document.getElementById("manifest-links");
-
-  if (!currentProject || !currentProject.manifest) {
-    if (editor) editor.value = "";
-    if (linksContainer) linksContainer.innerHTML = "";
-    return;
-  }
-
-  if (editor) {
-    editor.value = JSON.stringify(currentProject.manifest, null, 2);
-  }
-
-  if (linksContainer) {
-    const links = currentProject.manifest.links || [];
-    if (!links.length) {
-      linksContainer.innerHTML = "<p><em>No cross-links defined yet.</em></p>";
-    } else {
-      const ul = document.createElement("ul");
-      links.forEach((lnk) => {
-        const li = document.createElement("li");
-        li.textContent = `${lnk.from.type}:${lnk.from.id} -> ${lnk.to.type}:${lnk.to.id} (${lnk.relation})`;
-        ul.appendChild(li);
-      });
-      linksContainer.innerHTML = "";
-      linksContainer.appendChild(ul);
+      APP.projects[idx] = project;
     }
   }
+
+  uiSetProjectName(project ? project.name || 'Untitled Project' : 'No project selected');
+  uiSelectProject(project ? project.id : null);
 }
 
 // ---------------------------------------------------------------------------
@@ -272,20 +223,20 @@ function updateManifestEditor() {
 // ---------------------------------------------------------------------------
 
 function setupTabs() {
-  const tabButtons = document.querySelectorAll(".tab-button");
-  const panels = document.querySelectorAll(".tab-panel");
+  const tabButtons = document.querySelectorAll('.tab-button');
+  const panels = document.querySelectorAll('.tab-panel');
 
   tabButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener('click', () => {
       const tab = btn.dataset.tab;
       if (!tab) return;
 
-      tabButtons.forEach(b => b.classList.remove("active"));
-      panels.forEach(p => p.classList.remove("active"));
+      tabButtons.forEach((b) => b.classList.remove('active'));
+      panels.forEach((p) => p.classList.remove('active'));
 
-      btn.classList.add("active");
+      btn.classList.add('active');
       const panel = document.getElementById(`tab-${tab}`);
-      if (panel) panel.classList.add("active");
+      if (panel) panel.classList.add('active');
 
       fitTabView(tab);
     });
@@ -293,108 +244,123 @@ function setupTabs() {
 }
 
 function setupButtons() {
-  const newBtn         = document.getElementById("btn-new-project");
-  const exportBtn      = document.getElementById("btn-export-uapf");
-  const importBtn      = document.getElementById("btn-import-uapf");
-  const fileInput      = document.getElementById("uapf-file-input");
-  const aboutBtn       = document.getElementById("btn-about");
-  const aboutModal     = document.getElementById("about-modal");
-  const aboutClose     = document.getElementById("about-close");
-  const manifestEditor = document.getElementById("manifest-editor");
+  const newBtn = document.getElementById('btn-new-project');
+  const saveBtn = document.getElementById('btn-save-project');
+  const deleteBtn = document.getElementById('btn-delete-project');
+  const exportBtn = document.getElementById('btn-export-uapf');
+  const importBtn = document.getElementById('btn-import-uapf');
+  const fileInput = document.getElementById('uapf-file-input');
+  const aboutBtn = document.getElementById('btn-about');
+  const aboutModal = document.getElementById('about-modal');
+  const aboutClose = document.getElementById('about-close');
+  const manifestEditor = document.getElementById('manifest-editor');
 
-  // NEW: XML toggle buttons and containers
-  const bpmnXmlToggleBtn = document.getElementById("btn-bpmn-toggle-xml");
-  const dmnXmlToggleBtn  = document.getElementById("btn-dmn-toggle-xml");
-  const cmmnXmlToggleBtn = document.getElementById("btn-cmmn-toggle-xml");
+  const signInBtn = document.getElementById('btn-sign-in');
+  const signUpBtn = document.getElementById('btn-sign-up');
+  const logoutBtn = document.getElementById('btn-logout');
+  const profileBtn = document.getElementById('btn-profile');
 
-  const bpmnXmlContainer = document.getElementById("bpmn-xml-container");
-  const dmnXmlContainer  = document.getElementById("dmn-xml-container");
-  const cmmnXmlContainer = document.getElementById("cmmn-xml-container");
+  const bpmnXmlToggleBtn = document.getElementById('btn-bpmn-toggle-xml');
+  const dmnXmlToggleBtn = document.getElementById('btn-dmn-toggle-xml');
+  const cmmnXmlToggleBtn = document.getElementById('btn-cmmn-toggle-xml');
 
-  // NEW: per-type import/export buttons
-  const bpmnImportBtn = document.getElementById("btn-bpmn-import-xml");
-  const dmnImportBtn  = document.getElementById("btn-dmn-import-xml");
-  const cmmnImportBtn = document.getElementById("btn-cmmn-import-xml");
+  const bpmnXmlContainer = document.getElementById('bpmn-xml-container');
+  const dmnXmlContainer = document.getElementById('dmn-xml-container');
+  const cmmnXmlContainer = document.getElementById('cmmn-xml-container');
 
-  const bpmnExportBtn = document.getElementById("btn-bpmn-export-xml");
-  const dmnExportBtn  = document.getElementById("btn-dmn-export-xml");
-  const cmmnExportBtn = document.getElementById("btn-cmmn-export-xml");
+  const bpmnImportBtn = document.getElementById('btn-bpmn-import-xml');
+  const dmnImportBtn = document.getElementById('btn-dmn-import-xml');
+  const cmmnImportBtn = document.getElementById('btn-cmmn-import-xml');
 
-  const bpmnFileInput = document.getElementById("bpmn-xml-file-input");
-  const dmnFileInput  = document.getElementById("dmn-xml-file-input");
-  const cmmnFileInput = document.getElementById("cmmn-xml-file-input");
+  const bpmnExportBtn = document.getElementById('btn-bpmn-export-xml');
+  const dmnExportBtn = document.getElementById('btn-dmn-export-xml');
+  const cmmnExportBtn = document.getElementById('btn-cmmn-export-xml');
+
+  const bpmnFileInput = document.getElementById('bpmn-xml-file-input');
+  const dmnFileInput = document.getElementById('dmn-xml-file-input');
+  const cmmnFileInput = document.getElementById('cmmn-xml-file-input');
 
   if (newBtn) {
-    newBtn.addEventListener("click", async () => {
-      const name = prompt("Project name:", "New project");
-      if (name === null) return;
-      const description = prompt("Project description:", "") || "";
-      const proj = createNewProject(name.trim() || "Untitled Project", description);
-      setProject(proj);
-      await loadProjectIntoEditors();
-      showToast("New project created");
+    newBtn.addEventListener('click', async () => {
+      if (!ensureAuthAction('Create a new project')) return;
+      await handleNewProject();
+    });
+  }
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async () => {
+      if (!ensureAuthAction('Save a project')) return;
+      await handleSaveProject();
+    });
+  }
+
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', async () => {
+      if (!ensureAuthAction('Delete a project')) return;
+      await handleDeleteProject();
     });
   }
 
   if (exportBtn) {
-    exportBtn.addEventListener("click", () => {
-      exportUapf().catch(err => {
-        console.error("Export error", err);
-        showToast("Export failed");
+    exportBtn.addEventListener('click', () => {
+      if (!ensureAuthAction('Export UAPF')) return;
+      exportUapf().catch((err) => {
+        console.error('Export error', err);
+        uiShowToast('Export failed');
       });
     });
   }
 
   if (importBtn && fileInput) {
-    importBtn.addEventListener("click", () => {
-      fileInput.value = "";
+    importBtn.addEventListener('click', () => {
+      if (!ensureAuthAction('Import UAPF')) return;
+      fileInput.value = '';
       fileInput.click();
     });
 
-    fileInput.addEventListener("change", (event) => {
+    fileInput.addEventListener('change', (event) => {
+      if (!ensureAuthAction('Import UAPF')) return;
       const files = event.target.files;
       if (!files || !files[0]) return;
-      importUapf(files[0]).catch(err => {
-        console.error("Import error", err);
-        showToast("Import failed");
+      importUapf(files[0]).catch((err) => {
+        console.error('Import error', err);
+        uiShowToast('Import failed');
       });
     });
   }
 
-  // --- XML PREVIEW TOGGLE HELPERS ---
-
   function setupXmlToggle(btn, container, kind) {
     if (!btn || !container) return;
 
-    btn.addEventListener("click", async () => {
-      const visible = container.style.display === "block";
+    btn.addEventListener('click', async () => {
+      const visible = container.style.display === 'block';
 
       if (visible) {
-        container.style.display = "none";
-        btn.textContent = "Show XML";
+        container.style.display = 'none';
+        btn.textContent = 'Show XML';
       } else {
-        container.style.display = "block";
-        btn.textContent = "Hide XML";
+        container.style.display = 'block';
+        btn.textContent = 'Hide XML';
         await updateXmlPreview(kind);
       }
     });
   }
 
-  setupXmlToggle(bpmnXmlToggleBtn, bpmnXmlContainer, "bpmn");
-  setupXmlToggle(dmnXmlToggleBtn,  dmnXmlContainer,  "dmn");
-  setupXmlToggle(cmmnXmlToggleBtn, cmmnXmlContainer, "cmmn");
+  setupXmlToggle(bpmnXmlToggleBtn, bpmnXmlContainer, 'bpmn');
+  setupXmlToggle(dmnXmlToggleBtn, dmnXmlContainer, 'dmn');
+  setupXmlToggle(cmmnXmlToggleBtn, cmmnXmlContainer, 'cmmn');
 
-  // --- SINGLE XML IMPORT HELPERS ---
+  function setupXmlImport(importBtnEl, input, kind) {
+    if (!importBtnEl || !input) return;
 
-  function setupXmlImport(importBtn, input, kind) {
-    if (!importBtn || !input) return;
-
-    importBtn.addEventListener("click", () => {
-      input.value = "";
+    importBtnEl.addEventListener('click', () => {
+      if (!ensureAuthAction('Import XML')) return;
+      input.value = '';
       input.click();
     });
 
-    input.addEventListener("change", async (event) => {
+    input.addEventListener('change', async (event) => {
+      if (!ensureAuthAction('Import XML')) return;
       const files = event.target.files;
       if (!files || !files[0]) return;
 
@@ -402,58 +368,76 @@ function setupButtons() {
         await importSingleXml(kind, files[0]);
         await loadProjectIntoEditors();
         await updateXmlPreview(kind);
-        showToast(kind.toUpperCase() + " XML imported");
+        uiShowToast(kind.toUpperCase() + ' XML imported');
       } catch (err) {
-        console.error("Import " + kind + " XML failed", err);
-        showToast("Import " + kind.toUpperCase() + " XML failed");
+        console.error('Import ' + kind + ' XML failed', err);
+        uiShowToast('Import ' + kind.toUpperCase() + ' XML failed');
       }
     });
   }
 
-  setupXmlImport(bpmnImportBtn, bpmnFileInput, "bpmn");
-  setupXmlImport(dmnImportBtn,  dmnFileInput,  "dmn");
-  setupXmlImport(cmmnImportBtn, cmmnFileInput, "cmmn");
+  setupXmlImport(bpmnImportBtn, bpmnFileInput, 'bpmn');
+  setupXmlImport(dmnImportBtn, dmnFileInput, 'dmn');
+  setupXmlImport(cmmnImportBtn, cmmnFileInput, 'cmmn');
 
-  // --- SINGLE XML EXPORT HELPERS ---
+  function setupXmlExport(exportBtnEl, kind) {
+    if (!exportBtnEl) return;
 
-  function setupXmlExport(exportBtn, kind) {
-    if (!exportBtn) return;
-
-    exportBtn.addEventListener("click", () => {
-      exportSingleXml(kind).catch(err => {
-        console.error("Export " + kind + " XML failed", err);
-        showToast("Export " + kind.toUpperCase() + " XML failed");
+    exportBtnEl.addEventListener('click', () => {
+      if (!ensureAuthAction('Export XML')) return;
+      exportSingleXml(kind).catch((err) => {
+        console.error('Export ' + kind + ' XML failed', err);
+        uiShowToast('Export ' + kind.toUpperCase() + ' XML failed');
       });
     });
   }
 
-  setupXmlExport(bpmnExportBtn, "bpmn");
-  setupXmlExport(dmnExportBtn,  "dmn");
-  setupXmlExport(cmmnExportBtn, "cmmn");
+  setupXmlExport(bpmnExportBtn, 'bpmn');
+  setupXmlExport(dmnExportBtn, 'dmn');
+  setupXmlExport(cmmnExportBtn, 'cmmn');
+
+  if (signInBtn) {
+    signInBtn.addEventListener('click', () => authManager.login());
+  }
+
+  if (signUpBtn) {
+    signUpBtn.addEventListener('click', () => authManager.signup());
+  }
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => authManager.logout());
+  }
+
+  if (profileBtn) {
+    profileBtn.addEventListener('click', () => {
+      window.open('https://algomation.io/', '_blank', 'noopener');
+    });
+  }
 
   if (aboutBtn && aboutModal) {
-    aboutBtn.addEventListener("click", () => {
-      aboutModal.style.display = "flex";
+    aboutBtn.addEventListener('click', () => {
+      aboutModal.style.display = 'flex';
     });
   }
 
   if (aboutClose && aboutModal) {
-    aboutClose.addEventListener("click", () => {
-      aboutModal.style.display = "none";
+    aboutClose.addEventListener('click', () => {
+      aboutModal.style.display = 'none';
     });
   }
 
   if (aboutModal) {
-    aboutModal.addEventListener("click", (e) => {
+    aboutModal.addEventListener('click', (e) => {
       if (e.target === aboutModal) {
-        aboutModal.style.display = "none";
+        aboutModal.style.display = 'none';
       }
     });
   }
 
   if (manifestEditor) {
-    manifestEditor.addEventListener("input", () => {
-      if (!currentProject) return;
+    manifestEditor.addEventListener('input', () => {
+      const currentProject = getCurrentProject();
+      if (!currentProject || APP.mode !== MODE_AUTH) return;
       try {
         const parsed = JSON.parse(manifestEditor.value);
         currentProject.manifest = parsed;
@@ -465,37 +449,22 @@ function setupButtons() {
 }
 
 function setupShortcuts() {
-  document.addEventListener("keydown", async (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+  document.addEventListener('keydown', async (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
       e.preventDefault();
-      await syncProjectXmlFromEditors();
-      if (currentProject && currentProject.id) {
-        const idx = projects.findIndex(p => p.id === currentProject.id);
-        if (idx >= 0) {
-          projects[idx] = currentProject;
-        }
-        if (location.hostname === "localhost") {
-          saveProjectsToLocalStorage(projects);
-        }
-      }
-      showToast("Project saved");
+      if (!ensureAuthAction('Save a project')) return;
+      await handleSaveProject();
     }
   });
 }
 
-function showToast(message, timeout = 3000) {
-  const container = document.getElementById("toast-container");
-  if (!container) return;
+function ensureAuthAction(actionLabel) {
+  if (APP.mode === MODE_AUTH) {
+    return true;
+  }
 
-  const toast = document.createElement("div");
-  toast.className = "toast-item";
-  toast.textContent = message;
-  container.appendChild(toast);
-
-  setTimeout(() => {
-    toast.classList.add("fade-out");
-    setTimeout(() => toast.remove(), 300);
-  }, timeout);
+  uiShowToast(`${actionLabel} is disabled in demo mode.`);
+  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -504,70 +473,68 @@ function showToast(message, timeout = 3000) {
 
 function initModelers() {
   const BpmnCtor = window.BpmnJS;
-  const DmnCtor  = window.DmnJS;
+  const DmnCtor = window.DmnJS;
   const CmmnCtor = window.CmmnJS;
 
   if (!BpmnCtor || !DmnCtor || !CmmnCtor) {
-    console.error("Modeler constructors missing", { BpmnCtor, DmnCtor, CmmnCtor });
+    console.error('Modeler constructors missing', { BpmnCtor, DmnCtor, CmmnCtor });
   }
 
-  bpmnModeler = new BpmnCtor({ container: "#bpmn-canvas" });
+  bpmnModeler = new BpmnCtor({ container: '#bpmn-canvas' });
 
   dmnModeler = new DmnCtor({
-    container: "#dmn-canvas",
-    drd: { width: "100%", height: "100%" },
-    decisionTable: { width: "100%", height: "100%" },
-    literalExpression: { width: "100%", height: "100%" }
+    container: '#dmn-canvas',
+    drd: { width: '100%', height: '100%' },
+    decisionTable: { width: '100%', height: '100%' },
+    literalExpression: { width: '100%', height: '100%' }
   });
 
-  cmmnModeler = new CmmnCtor({ container: "#cmmn-canvas" });
+  cmmnModeler = new CmmnCtor({ container: '#cmmn-canvas' });
 
-  // NEW: auto-sync XML + preview when diagrams change
   if (bpmnModeler && bpmnModeler.on) {
-    bpmnModeler.on("commandStack.changed", () => {
-      updateXmlPreview("bpmn").catch(err =>
-        console.error("Failed to update BPMN XML preview", err)
+    bpmnModeler.on('commandStack.changed', () => {
+      updateXmlPreview('bpmn').catch((err) =>
+        console.error('Failed to update BPMN XML preview', err)
       );
     });
   }
 
   if (dmnModeler && dmnModeler.on) {
-    dmnModeler.on("commandStack.changed", () => {
-      updateXmlPreview("dmn").catch(err =>
-        console.error("Failed to update DMN XML preview", err)
+    dmnModeler.on('commandStack.changed', () => {
+      updateXmlPreview('dmn').catch((err) =>
+        console.error('Failed to update DMN XML preview', err)
       );
     });
   }
 
   if (cmmnModeler && cmmnModeler.on) {
-    cmmnModeler.on("commandStack.changed", () => {
-      updateXmlPreview("cmmn").catch(err =>
-        console.error("Failed to update CMMN XML preview", err)
+    cmmnModeler.on('commandStack.changed', () => {
+      updateXmlPreview('cmmn').catch((err) =>
+        console.error('Failed to update CMMN XML preview', err)
       );
     });
   }
 }
 
 async function loadProjectIntoEditors() {
+  const currentProject = getCurrentProject();
   if (!currentProject) return;
 
-  // BPMN
   if (bpmnModeler && currentProject.bpmnXml) {
     await bpmnModeler.importXML(currentProject.bpmnXml);
-    fitModelerViewport(bpmnModeler, "bpmn-canvas");
+    fitModelerViewport(bpmnModeler, 'bpmn-canvas');
   }
 
-  // DMN
   if (dmnModeler && currentProject.dmnXml) {
     const { warnings } = await dmnModeler.importXML(currentProject.dmnXml);
     if (warnings && warnings.length) {
-      console.warn("DMN warnings", warnings);
+      console.warn('DMN warnings', warnings);
     }
 
     const views = dmnModeler.getViews();
     if (views && views.length) {
       let viewToOpen = views[0];
-      const decisionTableView = views.find(v => v.type === "decisionTable");
+      const decisionTableView = views.find((v) => v.type === 'decisionTable');
       if (decisionTableView) {
         viewToOpen = decisionTableView;
       }
@@ -575,13 +542,12 @@ async function loadProjectIntoEditors() {
     }
   }
 
-  // CMMN
   if (cmmnModeler && currentProject.cmmnXml) {
     try {
       await cmmnModeler.importXML(currentProject.cmmnXml);
-      fitModelerViewport(cmmnModeler, "cmmn-canvas");
+      fitModelerViewport(cmmnModeler, 'cmmn-canvas');
     } catch (err) {
-      console.error("CMMN import error", err);
+      console.error('CMMN import error', err);
     }
   }
 
@@ -604,6 +570,7 @@ function saveCmmnXml(modeler, options = { format: true }) {
 }
 
 async function syncProjectXmlFromEditors() {
+  const currentProject = getCurrentProject();
   if (!currentProject) return;
 
   if (bpmnModeler) {
@@ -621,7 +588,7 @@ async function syncProjectXmlFromEditors() {
       const { xml } = await saveCmmnXml(cmmnModeler, { format: true });
       currentProject.cmmnXml = xml;
     } catch (err) {
-      console.error("Failed to save CMMN XML", err);
+      console.error('Failed to save CMMN XML', err);
     }
   }
 
@@ -633,15 +600,17 @@ async function syncProjectXmlFromEditors() {
 }
 
 async function updateXmlPreview(kind) {
+  const currentProject = getCurrentProject();
   if (!currentProject) return;
 
-  // First sync all XML from editors back into currentProject
-  await syncProjectXmlFromEditors();
+  if (APP.mode === MODE_AUTH) {
+    await syncProjectXmlFromEditors();
+  }
 
   const map = {
-    bpmn: { key: "bpmnXml", editorId: "bpmn-xml-editor" },
-    dmn:  { key: "dmnXml",  editorId: "dmn-xml-editor" },
-    cmmn: { key: "cmmnXml", editorId: "cmmn-xml-editor" }
+    bpmn: { key: 'bpmnXml', editorId: 'bpmn-xml-editor' },
+    dmn: { key: 'dmnXml', editorId: 'dmn-xml-editor' },
+    cmmn: { key: 'cmmnXml', editorId: 'cmmn-xml-editor' }
   };
 
   const cfg = map[kind];
@@ -650,7 +619,7 @@ async function updateXmlPreview(kind) {
   const ta = document.getElementById(cfg.editorId);
   if (!ta) return;
 
-  ta.value = currentProject[cfg.key] || "";
+  ta.value = currentProject[cfg.key] || '';
 }
 
 // ---------------------------------------------------------------------------
@@ -660,20 +629,24 @@ async function updateXmlPreview(kind) {
 function fitModelerViewport(modeler, canvasId) {
   if (!modeler) return;
   try {
-    const canvas = modeler.get("canvas");
-    if (canvas && typeof canvas.zoom === "function") {
-      canvas.zoom("fit-viewport");
+    const canvas = modeler.get('canvas');
+    if (canvas && typeof canvas.zoom === 'function') {
+      canvas.zoom('fit-viewport');
     }
   } catch (err) {
-    console.warn("Could not fit viewport for", canvasId, err);
+    console.warn('Could not fit viewport for', canvasId, err);
   }
 }
 
 function fitTabView(tab) {
-  if (tab === "bpmn") {
-    fitModelerViewport(bpmnModeler, "bpmn-canvas");
-  } else if (tab === "cmmn") {
-    fitModelerViewport(cmmnModeler, "cmmn-canvas");
+  if (APP.mode === MODE_GUEST) {
+    return;
+  }
+
+  if (tab === 'bpmn') {
+    fitModelerViewport(bpmnModeler, 'bpmn-canvas');
+  } else if (tab === 'cmmn') {
+    fitModelerViewport(cmmnModeler, 'cmmn-canvas');
   }
 }
 
@@ -682,20 +655,18 @@ function fitTabView(tab) {
 // ---------------------------------------------------------------------------
 
 async function importSingleXml(kind, file) {
-  if (!file) return;
+  if (!file || APP.mode !== MODE_AUTH) return;
 
   const text = await file.text();
+  const currentProject = getCurrentProject();
 
-  if (!currentProject) {
-    const proj = createNewProject();
-    setProject(proj);
-  }
+  if (!currentProject) return;
 
-  if (kind === "bpmn") {
+  if (kind === 'bpmn') {
     currentProject.bpmnXml = text;
-  } else if (kind === "dmn") {
+  } else if (kind === 'dmn') {
     currentProject.dmnXml = text;
-  } else if (kind === "cmmn") {
+  } else if (kind === 'cmmn') {
     currentProject.cmmnXml = text;
   }
 
@@ -704,58 +675,36 @@ async function importSingleXml(kind, file) {
   if (currentProject.manifest) {
     currentProject.manifest.updatedAt = now;
   }
-
-  // Persist into projects array
-  if (currentProject && currentProject.id) {
-    const idx = projects.findIndex(p => p.id === currentProject.id);
-    if (idx >= 0) {
-      projects[idx] = currentProject;
-    } else {
-      projects.push(currentProject);
-    }
-    if (location.hostname === "localhost") {
-      saveProjectsToLocalStorage(projects);
-    }
-    renderProjectList();
-  }
 }
 
 async function exportSingleXml(kind) {
+  const currentProject = getCurrentProject();
   if (!currentProject) {
-    showToast("No project loaded");
+    uiShowToast('No project loaded');
     return;
   }
 
   await syncProjectXmlFromEditors();
 
-  let xml = "";
-  let defaultExt = "";
-  if (kind === "bpmn") {
+  let xml = '';
+  let defaultExt = '';
+  if (kind === 'bpmn') {
     xml = currentProject.bpmnXml || EMPTY_BPMN_XML;
-    defaultExt = ".bpmn.xml";
-  } else if (kind === "dmn") {
+    defaultExt = '.bpmn.xml';
+  } else if (kind === 'dmn') {
     xml = currentProject.dmnXml || EMPTY_DMN_XML;
-    defaultExt = ".dmn.xml";
-  } else if (kind === "cmmn") {
+    defaultExt = '.dmn.xml';
+  } else if (kind === 'cmmn') {
     xml = currentProject.cmmnXml || EMPTY_CMMN_XML;
-    defaultExt = ".cmmn.xml";
+    defaultExt = '.cmmn.xml';
   } else {
     return;
   }
 
-  const name = (currentProject.name || "project") + defaultExt;
+  const name = (currentProject.name || 'project') + defaultExt;
 
-  const blob = new Blob([xml], { type: "application/xml" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-
-  URL.revokeObjectURL(url);
+  const blob = new Blob([xml], { type: 'application/xml' });
+  downloadBlob(blob, name);
 }
 
 // ---------------------------------------------------------------------------
@@ -763,104 +712,222 @@ async function exportSingleXml(kind) {
 // ---------------------------------------------------------------------------
 
 async function exportUapf() {
+  const currentProject = getCurrentProject();
   if (!currentProject) {
-    showToast("No project loaded");
+    uiShowToast('No project loaded');
     return;
   }
 
-  if (typeof JSZip === "undefined") {
-    showToast("JSZip is not available. Cannot export.");
-    return;
-  }
-
-  await syncProjectXmlFromEditors();
-
-  const zip = new JSZip();
-  zip.file("manifest.json", JSON.stringify(currentProject.manifest, null, 2));
-
-  if (currentProject.bpmnXml) {
-    zip.file("bpmn/main.bpmn.xml", currentProject.bpmnXml);
-  }
-  if (currentProject.dmnXml) {
-    zip.file("dmn/main.dmn.xml", currentProject.dmnXml);
-  }
-  if (currentProject.cmmnXml) {
-    zip.file("cmmn/main.cmmn.xml", currentProject.cmmnXml);
-  }
-
-  const blob = await zip.generateAsync({ type: "blob" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  const safeName = (currentProject.name || "project").replace(/[^a-z0-9_\-]/gi, "_");
-  a.download = safeName + ".uapf";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-
-  showToast("UAPF exported");
+  const blob = await apiClient.exportProject(currentProject.id);
+  const safeName = (currentProject.name || 'project').replace(/[^a-z0-9_\-]/gi, '_');
+  downloadBlob(blob, `${safeName}.uapf`);
+  uiShowToast('UAPF exported');
 }
 
 async function importUapf(file) {
   if (!file) return;
 
-  if (typeof JSZip === "undefined") {
-    showToast("JSZip is not available. Cannot import UAPF.");
+  const response = await apiClient.importProject(file);
+  await loadAuthWorkspace();
+
+  if (response?.id) {
+    await selectAuthProject(response.id);
+  }
+
+  uiShowToast('UAPF imported');
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// ---------------------------------------------------------------------------
+// Demo / Auth workspace loading
+// ---------------------------------------------------------------------------
+
+async function loadAuthWorkspace() {
+  uiSetMode(MODE_AUTH);
+  destroyViewers();
+
+  if (!bpmnModeler || !dmnModeler || !cmmnModeler) {
+    initModelers();
+  }
+
+  const response = await apiClient.getProjects();
+  APP.projects = response.projects || [];
+
+  uiRenderProjectList({
+    items: APP.projects.map((p) => ({ id: p.id, title: p.name || p.id })),
+    activeId: APP.currentProjectId,
+    emptyMessage: 'No projects yet',
+    onSelect: async (id) => {
+      await selectAuthProject(id);
+    }
+  });
+
+  if (!APP.projects.length) {
+    setCurrentProject(null, { updateList: false });
+    updateManifestEditor();
     return;
   }
 
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const zip = await JSZip.loadAsync(arrayBuffer);
+  await selectAuthProject(APP.projects[0].id);
+}
 
-    if (!zip.files["manifest.json"]) {
-      showToast("Invalid UAPF: manifest.json is missing.");
-      return;
+async function selectAuthProject(projectId) {
+  const project = await apiClient.getProject(projectId);
+  setCurrentProject(project, { updateList: true });
+  await loadProjectIntoEditors();
+}
+
+async function loadGuestDemo() {
+  uiSetMode(MODE_GUEST);
+  APP.demo.currentDemoId = null;
+  APP.currentProject = null;
+  APP.currentProjectId = null;
+  uiSetProjectName('Demo (read-only)');
+
+  await loadDemoCatalog();
+
+  uiRenderProjectList({
+    items: APP.demo.catalog.map((example) => ({ id: example.id, title: example.title })),
+    activeId: APP.demo.currentDemoId,
+    emptyMessage: 'No demos available',
+    onSelect: async (id) => {
+      await selectDemoProject(id);
     }
+  });
 
-    const manifestText = await zip.files["manifest.json"].async("string");
-    let manifest;
-    try {
-      manifest = JSON.parse(manifestText);
-    } catch (err) {
-      showToast("Invalid UAPF: manifest.json is not valid JSON.");
-      return;
-    }
-
-    const bpmnXml = zip.files["bpmn/main.bpmn.xml"]
-      ? await zip.files["bpmn/main.bpmn.xml"].async("string")
-      : null;
-
-    const dmnXml = zip.files["dmn/main.dmn.xml"]
-      ? await zip.files["dmn/main.dmn.xml"].async("string")
-      : null;
-
-    const cmmnXml = zip.files["cmmn/main.cmmn.xml"]
-      ? await zip.files["cmmn/main.cmmn.xml"].async("string")
-      : null;
-
-    const now = new Date().toISOString();
-
-    const project = {
-      id:          manifest.projectId || ("proj-import-" + Date.now()),
-      name:        manifest.name || file.name.replace(/\.uapf$/i, ""),
-      description: manifest.description || "",
-      createdAt:   manifest.createdAt || now,
-      updatedAt:   now,
-      bpmnXml:     bpmnXml || EMPTY_BPMN_XML,
-      dmnXml:      dmnXml || EMPTY_DMN_XML,
-      cmmnXml:     cmmnXml || EMPTY_CMMN_XML,
-      manifest
-    };
-
-    setProject(project);
-    await loadProjectIntoEditors();
-    showToast("UAPF imported");
-  } catch (err) {
-    console.error("Failed to import UAPF", err);
-    showToast("Failed to import UAPF. See console for details.");
+  const firstExample = APP.demo.catalog[0];
+  if (firstExample) {
+    await selectDemoProject(firstExample.id);
   }
+}
+
+async function selectDemoProject(exampleId) {
+  APP.demo.currentDemoId = exampleId;
+  uiSelectProject(exampleId);
+
+  const demoProject = await loadDemoProjectById(exampleId);
+  APP.currentProject = demoProject;
+  uiSetProjectName(demoProject.title || 'Demo');
+
+  renderBpmnViewer(document.getElementById('bpmn-canvas'), demoProject.bpmnXml || EMPTY_BPMN_XML);
+  renderDmnViewer(document.getElementById('dmn-canvas'), demoProject.dmnXml || EMPTY_DMN_XML);
+  renderCmmnViewer(document.getElementById('cmmn-canvas'), demoProject.cmmnXml || EMPTY_CMMN_XML);
+
+  updateManifestEditor();
+  await updateXmlPreview('bpmn');
+  await updateXmlPreview('dmn');
+  await updateXmlPreview('cmmn');
+}
+
+// ---------------------------------------------------------------------------
+// Manifest rendering
+// ---------------------------------------------------------------------------
+
+function updateManifestEditor() {
+  const editor = document.getElementById('manifest-editor');
+  const linksContainer = document.getElementById('manifest-links');
+  const currentProject = getCurrentProject();
+
+  if (!currentProject || !currentProject.manifest) {
+    if (editor) editor.value = '';
+    if (linksContainer) linksContainer.innerHTML = '';
+    return;
+  }
+
+  if (editor) {
+    editor.value = JSON.stringify(currentProject.manifest, null, 2);
+  }
+
+  if (linksContainer) {
+    const links = currentProject.manifest.links || [];
+    if (!links.length) {
+      linksContainer.innerHTML = '<p><em>No cross-links defined yet.</em></p>';
+    } else {
+      const ul = document.createElement('ul');
+      links.forEach((lnk) => {
+        const li = document.createElement('li');
+        li.textContent = `${lnk.from.type}:${lnk.from.id} -> ${lnk.to.type}:${lnk.to.id} (${lnk.relation})`;
+        ul.appendChild(li);
+      });
+      linksContainer.innerHTML = '';
+      linksContainer.appendChild(ul);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Auth CRUD handlers
+// ---------------------------------------------------------------------------
+
+async function handleNewProject() {
+  const name = prompt('Project name:', 'New project');
+  if (name === null) return;
+  const description = prompt('Project description:', '') || '';
+
+  const template = createNewProject(name.trim() || 'Untitled Project', description);
+  const payload = {
+    name: template.name,
+    description: template.description,
+    bpmnXml: template.bpmnXml,
+    dmnXml: template.dmnXml,
+    cmmnXml: template.cmmnXml,
+    manifest: template.manifest
+  };
+
+  const created = await apiClient.createProject(payload);
+  await loadAuthWorkspace();
+
+  if (created?.id) {
+    await selectAuthProject(created.id);
+  }
+
+  uiShowToast('New project created');
+}
+
+async function handleSaveProject() {
+  const currentProject = getCurrentProject();
+  if (!currentProject) {
+    uiShowToast('No project loaded');
+    return;
+  }
+
+  await syncProjectXmlFromEditors();
+
+  await apiClient.updateProject(currentProject.id, {
+    name: currentProject.name,
+    description: currentProject.description,
+    bpmnXml: currentProject.bpmnXml,
+    dmnXml: currentProject.dmnXml,
+    cmmnXml: currentProject.cmmnXml,
+    manifest: currentProject.manifest
+  });
+
+  uiShowToast('Project saved');
+}
+
+async function handleDeleteProject() {
+  const currentProject = getCurrentProject();
+  if (!currentProject) {
+    uiShowToast('No project loaded');
+    return;
+  }
+
+  const confirmed = confirm(`Delete project "${currentProject.name || currentProject.id}"?`);
+  if (!confirmed) return;
+
+  await apiClient.deleteProject(currentProject.id);
+  await loadAuthWorkspace();
+  uiShowToast('Project deleted');
 }
 
 // ---------------------------------------------------------------------------
@@ -871,40 +938,27 @@ async function initApp() {
   setupTabs();
   setupButtons();
   setupShortcuts();
+  uiSetMode('loading');
 
-  // Initialize authentication (FAIL CLOSED)
-  await authManager.init();
+  try {
+    await authManager.init();
+  } catch (e) {
+    console.error('Auth init failed', e);
+  }
 
-  // If auth redirects, browser navigates away; defensive stop if execution continues
-  if (!authManager.isAuthenticated) {
+  if (authManager.isAuthenticated) {
+    APP.mode = MODE_AUTH;
+    APP.user = authManager.user;
+    uiSetUser(authManager.user);
+    await loadAuthWorkspace();
     return;
   }
 
-  console.log('Authenticated, loading projects from API...');
-
-  // Load projects from backend API ONLY
-  const response = await apiClient.getProjects();
-  projects = response.projects || [];
-
-  // If user has no projects yet: show empty state or create in-memory only
-  if (!projects.length) {
-    // Option 1: show empty UI and wait user to click "New Project"
-    renderProjectList();
-    initModelers();
-    setProject(createNewProject());
-    await loadProjectIntoEditors();
-    return;
-  }
-
-  setProject(projects[0]);
-
-  renderProjectList();
-  initModelers();
-  await loadProjectIntoEditors();
+  APP.mode = MODE_GUEST;
+  await loadGuestDemo();
 }
 
-document.addEventListener("DOMContentLoaded", initApp);
+document.addEventListener('DOMContentLoaded', initApp);
 
-// expose for manual debugging from console
 window.exportUapf = exportUapf;
 window.importUapf = importUapf;
