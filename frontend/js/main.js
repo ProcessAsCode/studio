@@ -193,7 +193,7 @@ function setProject(p, options = {}) {
     } else {
       projects.push(p);
     }
-    if (persist) {
+    if (persist && location.hostname === "localhost") {
       saveProjectsToLocalStorage(projects);
     }
     renderProjectList();
@@ -474,7 +474,9 @@ function setupShortcuts() {
         if (idx >= 0) {
           projects[idx] = currentProject;
         }
-        saveProjectsToLocalStorage(projects);
+        if (location.hostname === "localhost") {
+          saveProjectsToLocalStorage(projects);
+        }
       }
       showToast("Project saved");
     }
@@ -711,7 +713,9 @@ async function importSingleXml(kind, file) {
     } else {
       projects.push(currentProject);
     }
-    saveProjectsToLocalStorage(projects);
+    if (location.hostname === "localhost") {
+      saveProjectsToLocalStorage(projects);
+    }
     renderProjectList();
   }
 }
@@ -868,11 +872,10 @@ async function initApp() {
   setupButtons();
   setupShortcuts();
 
-  // Initialize authentication (FAIL CLOSED: no offline fallback in production)
+  // Initialize authentication (FAIL CLOSED)
   await authManager.init();
 
-  // If init() triggers login redirect, the browser navigates away;
-  // this is here as a defensive stop if execution continues.
+  // If auth redirects, browser navigates away; defensive stop if execution continues
   if (!authManager.isAuthenticated) {
     return;
   }
@@ -883,15 +886,12 @@ async function initApp() {
   const response = await apiClient.getProjects();
   projects = response.projects || [];
 
-  // Do NOT auto-create offline projects in production.
-  // If you want an empty state, render empty list and prompt user to create first project.
+  // If user has no projects yet: show empty state or create in-memory only
   if (!projects.length) {
+    // Option 1: show empty UI and wait user to click "New Project"
     renderProjectList();
     initModelers();
-
-    // Create a clean empty project in-memory (NOT saved to localStorage)
-    const proj = createNewProject();
-    setProject(proj, { persist: false, updateList: false });
+    setProject(createNewProject());
     await loadProjectIntoEditors();
     return;
   }
