@@ -11,7 +11,8 @@ const winston = require('winston');
 
 const app = express();
 const PORT = process.env.PORT || 37100;
-app.set('trust proxy', true);
+// Trust first proxy (nginx) - required for rate limiting and IP detection
+app.set('trust proxy', 1);
 
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
