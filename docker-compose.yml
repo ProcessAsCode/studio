@@ -16,7 +16,7 @@ services:
     networks:
       - algomation-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-algomation}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-algomation} -d ${POSTGRES_DB:-algomation_studio}"]
       interval: 10s
       timeout: 5s
       retries: 5
