@@ -402,13 +402,13 @@ function setupButtons() {
     signInBtn.addEventListener('click', async () => {
       try {
         if (!authManager.auth0Client) {
-          uiShowToast('Auth not ready. Please refresh.');
+          alert('Auth is not ready yet. Refresh the page.');
           return;
         }
         await authManager.login();
       } catch (e) {
         console.error(e);
-        uiShowToast('Login failed. Check console.');
+        alert('Login failed. Check console.');
       }
     });
   }
@@ -417,13 +417,13 @@ function setupButtons() {
     signUpBtn.addEventListener('click', async () => {
       try {
         if (!authManager.auth0Client) {
-          uiShowToast('Auth not ready. Please refresh.');
+          alert('Auth is not ready yet. Refresh the page.');
           return;
         }
         await authManager.signup();
       } catch (e) {
         console.error(e);
-        uiShowToast('Signup failed. Check console.');
+        alert('Signup failed. Check console.');
       }
     });
   }
@@ -964,6 +964,13 @@ async function initApp() {
   setupShortcuts();
   uiSetMode('loading');
   uiSetAuthReady(false);
+
+  if (!window.createAuth0Client) {
+    console.error('Auth0 SDK not loaded. Check index.html script order or CSP.');
+    uiShowAuthError('Auth0 SDK missing. Check script order or CSP.');
+    await loadGuestDemo();
+    return;
+  }
 
   try {
     await authManager.init();

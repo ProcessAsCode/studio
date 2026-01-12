@@ -1,11 +1,14 @@
-import createAuth0Client from 'https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.esm.js';
-
 export const authManager = {
   auth0Client: null,
   isAuthenticated: false,
   user: null,
 
   async init() {
+    const createAuth0Client = window.createAuth0Client;
+    if (!createAuth0Client) {
+      throw new Error('Auth0 SDK not loaded: window.createAuth0Client is missing');
+    }
+
     this.auth0Client = await createAuth0Client({
       domain: 'dev-4yciirk0gltvh1su.eu.auth0.com',
       clientId: 'xb1vtp5GSHmXloJ9bfS1mTmPdLpTX5mX',
