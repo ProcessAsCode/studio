@@ -4,13 +4,14 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const session = require('express-session');
-const RedisStore = require('connect-redis').default;
+const connectRedis = require('connect-redis');
 const { createClient } = require('redis');
 const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
 const multer = require('multer');
 const JSZip = require('jszip');
 const winston = require('winston');
+const RedisStore = connectRedis(session);
 
 const app = express();
 const PORT = process.env.PORT || 37100;
