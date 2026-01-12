@@ -12,7 +12,8 @@ import {
   uiSetProjectName,
   uiSetUser,
   uiSetAuthReady,
-  uiShowAuthError
+  uiOpenAuthModal,
+  uiAuthModalError
 } from './ui.js';
 
 const MODE_GUEST = 'guest';
@@ -198,6 +199,30 @@ function createNewProject(name = 'Untitled Project', description = 'Algomation S
       updatedAt: now
     }
   };
+}
+
+function normalizeProject(project) {
+  if (!project) return project;
+
+  const normalized = {
+    ...project,
+    bpmnXml: project.bpmnXml ?? project.bpmn_xml ?? null,
+    dmnXml: project.dmnXml ?? project.dmn_xml ?? null,
+    cmmnXml: project.cmmnXml ?? project.cmmn_xml ?? null,
+    createdAt: project.createdAt ?? project.created_at ?? null,
+    updatedAt: project.updatedAt ?? project.updated_at ?? null,
+    lastAccessedAt: project.lastAccessedAt ?? project.last_accessed_at ?? null
+  };
+
+  if (typeof project.manifest === 'string') {
+    try {
+      normalized.manifest = JSON.parse(project.manifest);
+    } catch (err) {
+      normalized.manifest = project.manifest;
+    }
+  }
+
+  return normalized;
 }
 
 function getCurrentProject() {
@@ -399,37 +424,20 @@ function setupButtons() {
   setupXmlExport(cmmnExportBtn, 'cmmn');
 
   if (signInBtn) {
-    signInBtn.addEventListener('click', async () => {
-      try {
-        if (!authManager.auth0Client) {
-          alert('Auth is not ready yet. Refresh the page.');
-          return;
-        }
-        await authManager.login();
-      } catch (e) {
-        console.error(e);
-        alert('Login failed. Check console.');
-      }
-    });
+    signInBtn.addEventListener('click', () => uiOpenAuthModal('login'));
   }
 
   if (signUpBtn) {
-    signUpBtn.addEventListener('click', async () => {
-      try {
-        if (!authManager.auth0Client) {
-          alert('Auth is not ready yet. Refresh the page.');
-          return;
-        }
-        await authManager.signup();
-      } catch (e) {
-        console.error(e);
-        alert('Signup failed. Check console.');
-      }
-    });
+    signUpBtn.addEventListener('click', () => uiOpenAuthModal('register'));
   }
 
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => authManager.logout());
+    logoutBtn.addEventListener('click', async () => {
+      await authManager.logout();
+      APP.user = null;
+      uiSetUser(null);
+      await loadGuestDemo();
+    });
   }
 
   if (profileBtn) {
@@ -458,6 +466,31 @@ function setupButtons() {
     });
   }
 
+  document.getElementById('authForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const mode = document.getElementById('authModal')?.dataset?.mode || 'login';
+
+    const email = document.getElementById('authEmail')?.value?.trim();
+    const password = document.getElementById('authPassword')?.value || '';
+    const name = document.getElementById('authName')?.value?.trim() || null;
+
+    try {
+      if (mode === 'login') {
+        await authManager.loginWithPassword(email, password);
+      } else {
+        await authManager.register(email, password, name);
+      }
+
+      const modalEl = document.getElementById('authModal');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      modal?.hide();
+
+      await applyAuthenticatedState();
+    } catch (err) {
+      uiAuthModalError(err.message || 'Auth failed');
+    }
+  });
+
   if (manifestEditor) {
     manifestEditor.addEventListener('input', () => {
       const currentProject = getCurrentProject();
@@ -483,10 +516,11 @@ function setupShortcuts() {
 }
 
 function ensureAuthAction(actionLabel) {
-  if (APP.mode === MODE_AUTH) {
+  if (authManager.isAuthenticated) {
     return true;
   }
 
+  uiOpenAuthModal('login');
   uiShowToast(`${actionLabel} is disabled in demo mode.`);
   return false;
 }
@@ -785,7 +819,7 @@ async function loadAuthWorkspace() {
   }
 
   const response = await apiClient.getProjects();
-  APP.projects = response.projects || [];
+  APP.projects = (response.projects || []).map((project) => normalizeProject(project));
 
   uiRenderProjectList({
     items: APP.projects.map((p) => ({ id: p.id, title: p.name || p.id })),
@@ -805,8 +839,15 @@ async function loadAuthWorkspace() {
   await selectAuthProject(APP.projects[0].id);
 }
 
+async function applyAuthenticatedState() {
+  APP.mode = MODE_AUTH;
+  APP.user = authManager.user;
+  uiSetUser(authManager.user);
+  await loadAuthWorkspace();
+}
+
 async function selectAuthProject(projectId) {
-  const project = await apiClient.getProject(projectId);
+  const project = normalizeProject(await apiClient.getProject(projectId));
   setCurrentProject(project, { updateList: true });
   await loadProjectIntoEditors();
 }
@@ -963,37 +1004,22 @@ async function initApp() {
   setupButtons();
   setupShortcuts();
   uiSetMode('loading');
-  uiSetAuthReady(false);
-
-  if (!window.createAuth0Client) {
-    console.error('Auth0 SDK not loaded. Check index.html script order or CSP.');
-    uiShowAuthError('Auth0 SDK missing. Check script order or CSP.');
-    document.getElementById('btn-sign-in')?.setAttribute('disabled', 'disabled');
-    document.getElementById('btn-sign-up')?.setAttribute('disabled', 'disabled');
-    await loadGuestDemo();
-    return;
-  }
+  uiSetAuthReady(true);
 
   try {
     await authManager.init();
-    uiSetAuthReady(true);
   } catch (e) {
     console.error('Auth init failed', e);
-    uiShowAuthError('Authentication failed to initialize. Please refresh or contact admin.');
     await loadGuestDemo();
     return;
   }
 
   if (authManager.isAuthenticated) {
-    APP.mode = MODE_AUTH;
-    APP.user = authManager.user;
-    uiSetUser(authManager.user);
-    await loadAuthWorkspace();
-    return;
+    await applyAuthenticatedState();
+  } else {
+    APP.mode = MODE_GUEST;
+    await loadGuestDemo();
   }
-
-  APP.mode = MODE_GUEST;
-  await loadGuestDemo();
 }
 
 document.addEventListener('DOMContentLoaded', initApp);

@@ -1,119 +1,74 @@
-import { authManager } from './auth.js';
-
 class ApiClient {
   constructor() {
-    this.baseUrl = window.location.origin;
+    this.baseUrl = ''; // same-origin
   }
 
   async request(endpoint, options = {}) {
-    let token;
+    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
 
-    try {
-      token = await authManager.getToken();
-    } catch (error) {
-      await authManager.login();
-      throw error;
-    }
+    const res = await fetch(`${this.baseUrl}${endpoint}`, {
+      ...options,
+      headers,
+      credentials: 'include'
+    });
 
-    const headers = { 'Content-Type': 'application/json', ...options.headers };
-    headers.Authorization = `Bearer ${token}`;
-
-    const response = await fetch(`${this.baseUrl}${endpoint}`, { ...options, headers });
-
-    if (response.status === 401) {
-      await authManager.login();
+    if (res.status === 401) {
+      // Let caller show modal; do not redirect.
       throw new Error('Unauthorized');
     }
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Request failed' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+    // Allow empty responses
+    const text = await res.text();
+    if (!res.ok) {
+      try {
+        const obj = text ? JSON.parse(text) : {};
+        throw new Error(obj.error || `Request failed (${res.status})`);
+      } catch {
+        throw new Error(`Request failed (${res.status})`);
+      }
     }
 
-    return response.json();
+    return text ? JSON.parse(text) : null;
   }
 
-  async getProjects() {
-    return this.request('/api/projects');
-  }
+  get(endpoint) { return this.request(endpoint, { method: 'GET' }); }
+  post(endpoint, body) { return this.request(endpoint, { method: 'POST', body: JSON.stringify(body) }); }
+  put(endpoint, body) { return this.request(endpoint, { method: 'PUT', body: JSON.stringify(body) }); }
+  delete(endpoint) { return this.request(endpoint, { method: 'DELETE' }); }
 
-  async getProject(id) {
-    return this.request(`/api/projects/${id}`);
-  }
-
-  async createProject(data) {
-    return this.request('/api/projects', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-  }
-
-  async updateProject(id, data) {
-    return this.request(`/api/projects/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
-  }
-
-  async deleteProject(id) {
-    return this.request(`/api/projects/${id}`, { method: 'DELETE' });
-  }
+  getProjects() { return this.get('/api/projects'); }
+  getProject(id) { return this.get(`/api/projects/${id}`); }
+  createProject(payload) { return this.post('/api/projects', payload); }
+  updateProject(id, payload) { return this.put(`/api/projects/${id}`, payload); }
+  deleteProject(id) { return this.delete(`/api/projects/${id}`); }
 
   async exportProject(id) {
-    let token;
-
-    try {
-      token = await authManager.getToken();
-    } catch (error) {
-      await authManager.login();
-      throw error;
-    }
-
-    const response = await fetch(`${this.baseUrl}/api/projects/${id}/export`, {
-      headers: { Authorization: `Bearer ${token}` }
+    const res = await fetch(`${this.baseUrl}/api/projects/${id}/export`, {
+      credentials: 'include'
     });
-
-    if (response.status === 401) {
-      await authManager.login();
-      throw new Error('Unauthorized');
-    }
-
-    if (!response.ok) {
-      throw new Error('Export failed');
-    }
-
-    return response.blob();
+    if (res.status === 401) throw new Error('Unauthorized');
+    if (!res.ok) throw new Error('Export failed');
+    return res.blob();
   }
 
-  async importProject(file) {
-    let token;
+  importProject(file) {
+    return this.upload('/api/projects/import', file);
+  }
 
-    try {
-      token = await authManager.getToken();
-    } catch (error) {
-      await authManager.login();
-      throw error;
-    }
+  // Upload helper for imports
+  async upload(endpoint, file) {
+    const form = new FormData();
+    form.append('uapf', file);
 
-    const formData = new FormData();
-    formData.append('uapf', file);
-
-    const response = await fetch(`${this.baseUrl}/api/projects/import`, {
+    const res = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData
+      body: form,
+      credentials: 'include'
     });
 
-    if (response.status === 401) {
-      await authManager.login();
-      throw new Error('Unauthorized');
-    }
-
-    if (!response.ok) {
-      throw new Error('Import failed');
-    }
-
-    return response.json();
+    if (res.status === 401) throw new Error('Unauthorized');
+    if (!res.ok) throw new Error('Import failed');
+    return res.json();
   }
 }
 

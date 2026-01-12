@@ -5,8 +5,10 @@ CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(255) UNIQUE NOT NULL,
   name VARCHAR(255),
-  auth_provider VARCHAR(50) NOT NULL DEFAULT 'auth0',
-  auth_provider_id VARCHAR(255) UNIQUE NOT NULL,
+  auth_provider VARCHAR(50) NOT NULL DEFAULT 'local',
+  auth_provider_id VARCHAR(255) UNIQUE,
+  password_hash TEXT,
+  account_status VARCHAR(20) NOT NULL DEFAULT 'active',
   avatar_url TEXT,
   metadata JSONB DEFAULT '{}',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -17,9 +19,32 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_auth_provider_id ON users(auth_provider_id);
 
+CREATE TABLE IF NOT EXISTS organizations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL,
+  slug VARCHAR(120) UNIQUE NOT NULL,
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CONSTRAINT org_name_len CHECK (LENGTH(name) >= 2 AND LENGTH(name) <= 255),
+  CONSTRAINT org_slug_len CHECK (LENGTH(slug) >= 2 AND LENGTH(slug) <= 120)
+);
+
+CREATE TABLE IF NOT EXISTS organization_members (
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role VARCHAR(20) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  PRIMARY KEY (org_id, user_id),
+  CONSTRAINT org_role_check CHECK (role IN ('owner','admin','editor','viewer'))
+);
+
+CREATE INDEX idx_org_members_user ON organization_members(user_id);
+
 CREATE TABLE IF NOT EXISTS projects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  owner_user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  owner_org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
   description TEXT,
   bpmn_xml TEXT,
@@ -31,10 +56,16 @@ CREATE TABLE IF NOT EXISTS projects (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   last_accessed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  CONSTRAINT name_length CHECK (LENGTH(name) >= 3 AND LENGTH(name) <= 255)
+  CONSTRAINT name_length CHECK (LENGTH(name) >= 3 AND LENGTH(name) <= 255),
+  CONSTRAINT projects_owner_oneof CHECK (
+    (owner_user_id IS NOT NULL AND owner_org_id IS NULL)
+    OR
+    (owner_user_id IS NULL AND owner_org_id IS NOT NULL)
+  )
 );
 
-CREATE INDEX idx_projects_user_id ON projects(user_id);
+CREATE INDEX idx_projects_owner_user_id ON projects(owner_user_id);
+CREATE INDEX idx_projects_owner_org_id ON projects(owner_org_id);
 CREATE INDEX idx_projects_updated_at ON projects(updated_at DESC);
 
 CREATE TABLE IF NOT EXISTS project_shares (
