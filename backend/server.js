@@ -4,9 +4,6 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const session = require('express-session');
-// Robust connect-redis import across versions
-let ConnectRedis = require('connect-redis');
-ConnectRedis = ConnectRedis?.default || ConnectRedis;
 const { createClient } = require('redis');
 const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
@@ -14,21 +11,34 @@ const multer = require('multer');
 const JSZip = require('jszip');
 const winston = require('winston');
 
-// Two possible APIs:
-// 1) ConnectRedis(session) -> returns RedisStore constructor (factory form)
-// 2) ConnectRedis is already a RedisStore constructor (class form)
-let RedisStore;
-if (typeof ConnectRedis === 'function' && ConnectRedis.length >= 1) {
-  // factory form
-  try {
-    RedisStore = ConnectRedis(session);
-  } catch {
-    // class form fallback
-    RedisStore = ConnectRedis;
+function resolveRedisStoreCtor() {
+  let mod = require('connect-redis');
+  mod = mod?.default || mod;
+
+  // Possible shapes:
+  // - class RedisStore
+  // - { RedisStore: class }
+  // - function factory(session) -> class
+  // - function RedisStore(options) -> store instance (older patterns)
+  const candidate = mod?.RedisStore || mod;
+
+  // If it's a factory expecting session, try that first.
+  if (typeof candidate === 'function') {
+    try {
+      // Some versions: candidate(session) -> class
+      const maybeCtor = candidate(session);
+      if (typeof maybeCtor === 'function') return maybeCtor;
+    } catch (e) {
+      // ignore and fall through
+    }
+    // Otherwise candidate itself might be the ctor (class) OR creator fn
+    return candidate;
   }
-} else {
-  RedisStore = ConnectRedis;
+
+  return null;
 }
+
+const RedisStoreResolved = resolveRedisStoreCtor();
 
 const app = express();
 const PORT = process.env.PORT || 37100;
@@ -76,8 +86,21 @@ const COOKIE_SECURE = (process.env.COOKIE_SECURE || 'true') === 'true';
 const redisClient = createClient({ url: process.env.REDIS_URL });
 redisClient.on('error', (err) => logger.error('Redis error', err));
 
+let sessionStore;
+if (!RedisStoreResolved) {
+  throw new Error('connect-redis: could not resolve RedisStore');
+}
+
+// Try as constructor first
+try {
+  sessionStore = new RedisStoreResolved({ client: redisClient });
+} catch (e) {
+  // Try as function returning store instance
+  sessionStore = RedisStoreResolved({ client: redisClient });
+}
+
 app.use(session({
-  store: new RedisStore({ client: redisClient }),
+  store: sessionStore,
   secret: process.env.SESSION_SECRET,
   name: 'studio_session',
   resave: false,
