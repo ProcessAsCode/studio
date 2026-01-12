@@ -1,3 +1,6 @@
+// Access Auth0 SDK from global scope
+const { createAuth0Client } = window.auth0 || window;
+
 class AuthManager {
   constructor() {
     this.auth0Client = null;
@@ -6,6 +9,9 @@ class AuthManager {
   }
   async init() {
     try {
+      if (!createAuth0Client) {
+        throw new Error('Auth0 SDK not loaded. Check script order in index.html');
+      }
       this.auth0Client = await createAuth0Client({
         domain: 'dev-4yciirk0gltvh1su.eu.auth0.com',
         clientId: 'xb1vtp5GSHmXloJ9bfS1mTmPdLpTX5mX',
