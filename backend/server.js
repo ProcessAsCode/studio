@@ -4,14 +4,31 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const session = require('express-session');
-const connectRedis = require('connect-redis');
+// Robust connect-redis import across versions
+let ConnectRedis = require('connect-redis');
+ConnectRedis = ConnectRedis?.default || ConnectRedis;
 const { createClient } = require('redis');
 const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
 const multer = require('multer');
 const JSZip = require('jszip');
 const winston = require('winston');
-const RedisStore = connectRedis(session);
+
+// Two possible APIs:
+// 1) ConnectRedis(session) -> returns RedisStore constructor (factory form)
+// 2) ConnectRedis is already a RedisStore constructor (class form)
+let RedisStore;
+if (typeof ConnectRedis === 'function' && ConnectRedis.length >= 1) {
+  // factory form
+  try {
+    RedisStore = ConnectRedis(session);
+  } catch {
+    // class form fallback
+    RedisStore = ConnectRedis;
+  }
+} else {
+  RedisStore = ConnectRedis;
+}
 
 const app = express();
 const PORT = process.env.PORT || 37100;
