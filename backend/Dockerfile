@@ -9,4 +9,4 @@ USER node
 EXPOSE 37100
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:37100/health || exit 1
-CMD ["node", "server.js"]
+CMD ["sh", "-lc", "node scripts/migrate.js && node server.js"]

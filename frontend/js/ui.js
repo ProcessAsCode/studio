@@ -145,3 +145,45 @@ export function uiSetUser(user) {
   const displayName = user?.name || user?.email || 'User';
   greeting.textContent = displayName;
 }
+
+export function uiOpenAuthModal(mode = 'login') {
+  const modalEl = document.getElementById('authModal');
+  if (!modalEl) return;
+
+  const authError = document.getElementById('authError');
+  if (authError) {
+    authError.classList.add('d-none');
+    authError.textContent = '';
+  }
+
+  const title = document.getElementById('authModalTitle');
+  const tabLogin = document.getElementById('authTabLogin');
+  const tabRegister = document.getElementById('authTabRegister');
+  const nameWrap = document.getElementById('authNameWrap');
+  const submit = document.getElementById('authSubmit');
+
+  function setMode(m) {
+    const isLogin = m === 'login';
+    if (title) title.textContent = isLogin ? 'Sign in' : 'Register';
+    if (tabLogin) tabLogin.classList.toggle('active', isLogin);
+    if (tabRegister) tabRegister.classList.toggle('active', !isLogin);
+    if (nameWrap) nameWrap.style.display = isLogin ? 'none' : 'block';
+    if (submit) submit.textContent = isLogin ? 'Sign in' : 'Register';
+    modalEl.dataset.mode = m;
+  }
+
+  setMode(mode);
+
+  tabLogin?.addEventListener('click', () => setMode('login'), { once: true });
+  tabRegister?.addEventListener('click', () => setMode('register'), { once: true });
+
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+}
+
+export function uiAuthModalError(message) {
+  const authError = document.getElementById('authError');
+  if (!authError) return;
+  authError.textContent = message;
+  authError.classList.remove('d-none');
+}

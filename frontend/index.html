@@ -240,6 +240,47 @@
 
   <div id="toast-container" class="toast-container"></div>
 
+  <!-- Auth Modal -->
+  <div class="modal fade" id="authModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="authModalTitle">Sign in</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="btn-group w-100 mb-3" role="group">
+            <button id="authTabLogin" type="button" class="btn btn-outline-primary active">Sign in</button>
+            <button id="authTabRegister" type="button" class="btn btn-outline-primary">Register</button>
+          </div>
+
+          <div id="authError" class="alert alert-danger d-none"></div>
+
+          <form id="authForm">
+            <div class="mb-2" id="authNameWrap" style="display:none;">
+              <label class="form-label">Name</label>
+              <input id="authName" class="form-control" autocomplete="name" />
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label">Email</label>
+              <input id="authEmail" class="form-control" type="email" autocomplete="email" required />
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label">Password</label>
+              <input id="authPassword" class="form-control" type="password" autocomplete="current-password" required />
+              <div class="form-text">Minimum 8 characters.</div>
+            </div>
+
+            <button id="authSubmit" type="submit" class="btn btn-primary w-100">Sign in</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Bootstrap 5 JS bundle (optional, for future modals/tooltips) -->
   <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
@@ -254,10 +295,6 @@
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
   <!-- Auth and API integration -->
-  <script src="/vendor/auth0/auth0-spa-js.production.js"></script>
-  <script>
-    window.__AUTH0_READY__ = typeof window.createAuth0Client === "function";
-  </script>
   <script type="module" src="js/auth.js"></script>
   <script type="module" src="js/api-client.js"></script>
   <script type="module" src="js/main.js"></script>
