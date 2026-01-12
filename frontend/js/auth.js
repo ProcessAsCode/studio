@@ -1,50 +1,68 @@
-// Access Auth0 SDK from global scope
-const { createAuth0Client } = window.auth0 || window;
-
-class AuthManager {
-  constructor() {
-    this.auth0Client = null;
-    this.user = null;
-    this.isAuthenticated = false;
-  }
-  async init() {
-    try {
-      if (!createAuth0Client) {
-        throw new Error('Auth0 SDK not loaded. Check script order in index.html');
-      }
-      this.auth0Client = await createAuth0Client({
-        domain: 'dev-4yciirk0gltvh1su.eu.auth0.com',
-        clientId: 'xb1vtp5GSHmXloJ9bfS1mTmPdLpTX5mX',
-        authorizationParams: {
-          redirect_uri: window.location.origin,
-          audience: 'https://api.algomation.io'
-        }
-      });
-      if (window.location.search.includes('code=')) {
-        await this.auth0Client.handleRedirectCallback();
-        window.history.replaceState({}, document.title, '/');
-      }
-      this.isAuthenticated = await this.auth0Client.isAuthenticated();
-      if (this.isAuthenticated) {
-        this.user = await this.auth0Client.getUser();
-        console.log('Authenticated:', this.user.email);
-      } else {
-        await this.login();
-      }
-      return this.isAuthenticated;
-    } catch (error) {
-      console.error('Auth failed:', error);
-      throw error;
-    }
-  }
-  async login() { await this.auth0Client.loginWithRedirect(); }
-  async logout() { await this.auth0Client.logout({ logoutParams: { returnTo: window.location.origin } }); }
-  async getAccessToken() {
-    if (!this.isAuthenticated) return null;
-    try { return await this.auth0Client.getTokenSilently(); }
-    catch (error) { await this.login(); return null; }
-  }
-  getUser() { return this.user; }
+function waitForAuth0(timeoutMs = 5000) {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const tick = () => {
+      if (typeof window.createAuth0Client === "function") return resolve();
+      if (Date.now() - start > timeoutMs) return reject(new Error("Auth0 SDK not loaded (timeout)"));
+      setTimeout(tick, 50);
+    };
+    tick();
+  });
 }
-export const authManager = new AuthManager();
+
+export const authManager = {
+  auth0Client: null,
+  isAuthenticated: false,
+  user: null,
+
+  async init() {
+    await waitForAuth0();
+    const createAuth0Client = window.createAuth0Client;
+    if (!createAuth0Client) {
+      throw new Error('Auth0 SDK not loaded: window.createAuth0Client is missing');
+    }
+
+    this.auth0Client = await createAuth0Client({
+      domain: 'dev-4yciirk0gltvh1su.eu.auth0.com',
+      clientId: 'xb1vtp5GSHmXloJ9bfS1mTmPdLpTX5mX',
+      authorizationParams: {
+        redirect_uri: window.location.origin,
+        audience: 'https://api.algomation.io'
+      }
+    });
+
+    if (window.location.search.includes('code=') && window.location.search.includes('state=')) {
+      await this.auth0Client.handleRedirectCallback();
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    this.isAuthenticated = await this.auth0Client.isAuthenticated();
+    if (this.isAuthenticated) {
+      this.user = await this.auth0Client.getUser();
+    }
+  },
+
+  async login() {
+    if (!this.auth0Client) throw new Error('Auth0 client not initialized');
+    await this.auth0Client.loginWithRedirect();
+  },
+
+  async signup() {
+    if (!this.auth0Client) throw new Error('Auth0 client not initialized');
+    await this.auth0Client.loginWithRedirect({
+      authorizationParams: { screen_hint: 'signup' }
+    });
+  },
+
+  async logout() {
+    if (!this.auth0Client) return;
+    await this.auth0Client.logout({ logoutParams: { returnTo: window.location.origin } });
+  },
+
+  async getToken() {
+    if (!this.auth0Client) throw new Error('Auth0 client not initialized');
+    return await this.auth0Client.getTokenSilently();
+  }
+};
+
 window.authManager = authManager;
