@@ -1,9 +1,22 @@
+function waitForAuth0(timeoutMs = 5000) {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const tick = () => {
+      if (typeof window.createAuth0Client === "function") return resolve();
+      if (Date.now() - start > timeoutMs) return reject(new Error("Auth0 SDK not loaded (timeout)"));
+      setTimeout(tick, 50);
+    };
+    tick();
+  });
+}
+
 export const authManager = {
   auth0Client: null,
   isAuthenticated: false,
   user: null,
 
   async init() {
+    await waitForAuth0();
     const createAuth0Client = window.createAuth0Client;
     if (!createAuth0Client) {
       throw new Error('Auth0 SDK not loaded: window.createAuth0Client is missing');

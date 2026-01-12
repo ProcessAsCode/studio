@@ -968,6 +968,8 @@ async function initApp() {
   if (!window.createAuth0Client) {
     console.error('Auth0 SDK not loaded. Check index.html script order or CSP.');
     uiShowAuthError('Auth0 SDK missing. Check script order or CSP.');
+    document.getElementById('btn-sign-in')?.setAttribute('disabled', 'disabled');
+    document.getElementById('btn-sign-up')?.setAttribute('disabled', 'disabled');
     await loadGuestDemo();
     return;
   }

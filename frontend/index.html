@@ -254,7 +254,10 @@
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
   <!-- Auth and API integration -->
-  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+  <script src="/vendor/auth0/auth0-spa-js.production.js"></script>
+  <script>
+    window.__AUTH0_READY__ = typeof window.createAuth0Client === "function";
+  </script>
   <script type="module" src="js/auth.js"></script>
   <script type="module" src="js/api-client.js"></script>
   <script type="module" src="js/main.js"></script>
