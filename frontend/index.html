@@ -3,91 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <title>Algomation Studio</title>
-   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Bootstrap 5 CSS -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-    crossorigin="anonymous"
-  />
-
-  <!-- BPMN.js styles -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous"/>
   <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.1/dist/assets/diagram-js.css" />
   <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.1/dist/assets/bpmn-font/css/bpmn.css" />
-
-  <!-- DMN.js styles -->
   <link rel="stylesheet" href="https://unpkg.com/dmn-js@14.5.0/dist/assets/dmn-js-decision-table.css" />
   <link rel="stylesheet" href="https://unpkg.com/dmn-js@14.5.0/dist/assets/dmn-js-drd.css" />
   <link rel="stylesheet" href="https://unpkg.com/dmn-js@14.5.0/dist/assets/dmn-js-literal-expression.css" />
   <link rel="stylesheet" href="https://unpkg.com/dmn-js@14.5.0/dist/assets/dmn-font/css/dmn.css" />
-
-  <!-- CMMN.js styles -->
   <link rel="stylesheet" href="https://unpkg.com/cmmn-js@0.20.0/dist/assets/diagram-js.css" />
   <link rel="stylesheet" href="https://unpkg.com/cmmn-js@0.20.0/dist/assets/cmmn-font/css/cmmn.css" />
-
-  <!-- Your app styling (you can leave css/style.css empty or minimal) -->
   <link rel="stylesheet" href="css/style.css" />
-
 </head>
 <body>
 
   <header class="app-header">
     <div class="app-logo">Algomation Studio</div>
-
-    <!-- NEW: current project name badge -->
-    <div id="current-project-name" class="app-project-name text-truncate">
-      No project selected
-    </div>
-
+    <div id="current-project-name" class="app-project-name text-truncate">No project selected</div>
     <div class="app-actions">
       <div class="project-actions">
-        <button id="btn-new-project" class="btn btn-sm btn-primary me-2">
-          New Project
-        </button>
-        <button id="btn-save-project" class="btn btn-sm btn-outline-primary me-2">
-          Save
-        </button>
-        <button id="btn-delete-project" class="btn btn-sm btn-outline-danger me-2">
-          Delete
-        </button>
-        <button id="btn-import-uapf" class="btn btn-sm btn-outline-secondary me-2">
-          Import UAPF
-        </button>
-        <button id="btn-export-uapf" class="btn btn-sm btn-outline-secondary me-2">
-          Export UAPF
-        </button>
-        <button id="btn-about" class="btn btn-sm btn-outline-info">
-          About
-        </button>
+        <button id="btn-new-project" class="btn btn-sm btn-primary me-2">New Project</button>
+        <button id="btn-save-project" class="btn btn-sm btn-outline-primary me-2">Save</button>
+        <button id="btn-delete-project" class="btn btn-sm btn-outline-danger me-2">Delete</button>
+        <button id="btn-import-uapf" class="btn btn-sm btn-outline-secondary me-2">Import UAPF</button>
+        <button id="btn-export-uapf" class="btn btn-sm btn-outline-secondary me-2">Export UAPF</button>
+        <button id="btn-about" class="btn btn-sm btn-outline-info">About</button>
       </div>
-
       <div id="auth-actions" class="auth-actions">
-        <button id="btn-sign-in" class="btn btn-sm btn-light me-2">
-          Sign in
-        </button>
-        <button id="btn-sign-up" class="btn btn-sm btn-outline-light">
-          Sign up
-        </button>
+        <button id="btn-sign-in" class="btn btn-sm btn-light me-2">Sign in</button>
+        <button id="btn-sign-up" class="btn btn-sm btn-outline-light">Sign up</button>
       </div>
-
       <div id="user-menu" class="user-menu dropdown hidden">
-        <button
-          class="btn btn-sm btn-light dropdown-toggle"
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-        >
+        <button class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
           Hello, <span id="user-greeting">User</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
-          <li>
-            <button id="btn-profile" class="dropdown-item">Profile</button>
-          </li>
-          <li>
-            <button id="btn-logout" class="dropdown-item">Logout</button>
-          </li>
+          <li><button id="btn-profile" class="dropdown-item">Profile</button></li>
+          <li><button id="btn-logout" class="dropdown-item">Logout</button></li>
         </ul>
       </div>
     </div>
@@ -112,113 +66,81 @@
       </nav>
 
       <section class="app-tab-content">
+
+        <!-- BPMN Tab -->
         <div id="tab-bpmn" class="tab-panel active">
-          <div class="tab-toolbar d-flex justify-content-between align-items-center mb-2">
+          <div class="tab-toolbar d-flex justify-content-between align-items-center">
             <div>
-              <button id="btn-bpmn-import-xml" class="btn btn-sm btn-outline-secondary me-1">
-                Import BPMN XML
-              </button>
-              <button id="btn-bpmn-export-xml" class="btn btn-sm btn-outline-secondary">
-                Export BPMN XML
-              </button>
+              <button id="btn-bpmn-import-xml" class="btn btn-sm btn-outline-secondary me-1">Import BPMN XML</button>
+              <button id="btn-bpmn-export-xml" class="btn btn-sm btn-outline-secondary">Export BPMN XML</button>
             </div>
-            <button id="btn-bpmn-toggle-xml" class="btn btn-sm btn-outline-secondary">
-              Show XML
-            </button>
+            <button id="btn-bpmn-toggle-xml" class="btn btn-sm btn-outline-secondary">Show XML</button>
           </div>
-
-          <div id="bpmn-canvas" class="modeler-canvas"></div>
-
-          <div id="bpmn-xml-container" class="xml-container" style="display:none;">
-            <label class="small text-muted d-block mb-1">BPMN XML</label>
-            <textarea
-              id="bpmn-xml-editor"
-              class="xml-editor"
-              spellcheck="false"
-            ></textarea>
+          <div class="canvas-xml-split">
+            <div id="bpmn-canvas" class="modeler-canvas"></div>
+            <div id="bpmn-xml-container" class="xml-pane" style="display:none;">
+              <div class="xml-pane-header">BPMN XML</div>
+              <textarea id="bpmn-xml-editor" class="xml-editor" spellcheck="false"></textarea>
+            </div>
           </div>
         </div>
+
+        <!-- DMN Tab -->
         <div id="tab-dmn" class="tab-panel">
-          <div class="tab-toolbar d-flex justify-content-between align-items-center mb-2">
+          <div class="tab-toolbar d-flex justify-content-between align-items-center">
             <div>
-              <button id="btn-dmn-import-xml" class="btn btn-sm btn-outline-secondary me-1">
-                Import DMN XML
-              </button>
-              <button id="btn-dmn-export-xml" class="btn btn-sm btn-outline-secondary">
-                Export DMN XML
-              </button>
+              <button id="btn-dmn-back-to-table" class="btn btn-sm btn-outline-primary me-2" style="display:none;">← Decision Table</button>
+              <button id="btn-dmn-import-xml" class="btn btn-sm btn-outline-secondary me-1">Import DMN XML</button>
+              <button id="btn-dmn-export-xml" class="btn btn-sm btn-outline-secondary">Export DMN XML</button>
             </div>
-            <button id="btn-dmn-toggle-xml" class="btn btn-sm btn-outline-secondary">
-              Show XML
-            </button>
+            <button id="btn-dmn-toggle-xml" class="btn btn-sm btn-outline-secondary">Show XML</button>
           </div>
-
-          <div id="dmn-canvas" class="modeler-canvas"></div>
-
-          <div id="dmn-xml-container" class="xml-container" style="display:none;">
-            <label class="small text-muted d-block mb-1">DMN XML</label>
-            <textarea
-              id="dmn-xml-editor"
-              class="xml-editor"
-              spellcheck="false"
-            ></textarea>
+          <div class="canvas-xml-split">
+            <div id="dmn-canvas" class="modeler-canvas"></div>
+            <div id="dmn-xml-container" class="xml-pane" style="display:none;">
+              <div class="xml-pane-header">DMN XML</div>
+              <textarea id="dmn-xml-editor" class="xml-editor" spellcheck="false"></textarea>
+            </div>
           </div>
         </div>
+
+        <!-- CMMN Tab -->
         <div id="tab-cmmn" class="tab-panel">
-          <div class="tab-toolbar d-flex justify-content-between align-items-center mb-2">
+          <div class="tab-toolbar d-flex justify-content-between align-items-center">
             <div>
-              <button id="btn-cmmn-import-xml" class="btn btn-sm btn-outline-secondary me-1">
-                Import CMMN XML
-              </button>
-              <button id="btn-cmmn-export-xml" class="btn btn-sm btn-outline-secondary">
-                Export CMMN XML
-              </button>
+              <button id="btn-cmmn-import-xml" class="btn btn-sm btn-outline-secondary me-1">Import CMMN XML</button>
+              <button id="btn-cmmn-export-xml" class="btn btn-sm btn-outline-secondary">Export CMMN XML</button>
             </div>
-            <button id="btn-cmmn-toggle-xml" class="btn btn-sm btn-outline-secondary">
-              Show XML
-            </button>
+            <button id="btn-cmmn-toggle-xml" class="btn btn-sm btn-outline-secondary">Show XML</button>
           </div>
-
-          <div id="cmmn-canvas" class="modeler-canvas"></div>
-
-          <div id="cmmn-xml-container" class="xml-container" style="display:none;">
-            <label class="small text-muted d-block mb-1">CMMN XML</label>
-            <textarea
-              id="cmmn-xml-editor"
-              class="xml-editor"
-              spellcheck="false"
-            ></textarea>
+          <div class="canvas-xml-split">
+            <div id="cmmn-canvas" class="modeler-canvas"></div>
+            <div id="cmmn-xml-container" class="xml-pane" style="display:none;">
+              <div class="xml-pane-header">CMMN XML</div>
+              <textarea id="cmmn-xml-editor" class="xml-editor" spellcheck="false"></textarea>
+            </div>
           </div>
         </div>
+
+        <!-- Manifest Tab -->
         <div id="tab-manifest" class="tab-panel">
-          <div id="manifest-links" class="manifest-links"></div>
-          <textarea id="manifest-editor" class="manifest-editor" spellcheck="false"></textarea>
+          <div class="canvas-xml-split" style="flex-direction:column;">
+            <div id="manifest-links" class="manifest-links"></div>
+            <textarea id="manifest-editor" class="manifest-editor" spellcheck="false"></textarea>
+          </div>
         </div>
+
       </section>
     </section>
   </main>
 
+  <!-- Hidden file inputs -->
   <input type="file" id="uapf-file-input" accept=".uapf" style="display:none" />
+  <input type="file" id="bpmn-xml-file-input" accept=".bpmn,.xml" style="display:none" />
+  <input type="file" id="dmn-xml-file-input" accept=".dmn,.xml" style="display:none" />
+  <input type="file" id="cmmn-xml-file-input" accept=".cmmn,.xml" style="display:none" />
 
-  <input
-    type="file"
-    id="bpmn-xml-file-input"
-    accept=".bpmn,.xml"
-    style="display:none"
-  />
-  <input
-    type="file"
-    id="dmn-xml-file-input"
-    accept=".dmn,.xml"
-    style="display:none"
-  />
-  <input
-    type="file"
-    id="cmmn-xml-file-input"
-    accept=".cmmn,.xml"
-    style="display:none"
-  />
-
+  <!-- About Modal -->
   <div id="about-modal" class="modal-backdrop" style="display:none;">
     <div class="modal">
       <h2>About Algomation Studio</h2>
@@ -229,12 +151,8 @@
         <li>Model cases in CMMN</li>
         <li>Export all into a single .uapf file</li>
       </ul>
-      <p>
-        UAPF is intended as a machine-readable container that AI agents and runtimes can execute as part of an "algorithmated" enterprise.
-      </p>
-      <p>
-        Learn more at: <a href="https://algomation.io/" target="_blank">algomation.io</a>
-      </p>
+      <p>UAPF is intended as a machine-readable container that AI agents and runtimes can execute as part of an "algorithmated" enterprise.</p>
+      <p>Learn more at: <a href="https://algomation.io/" target="_blank">algomation.io</a></p>
       <button id="about-close">Close</button>
     </div>
   </div>
@@ -249,32 +167,26 @@
           <h5 class="modal-title" id="authModalTitle">Sign in</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-
         <div class="modal-body">
           <div class="btn-group w-100 mb-3" role="group">
             <button id="authTabLogin" type="button" class="btn btn-outline-primary active">Sign in</button>
             <button id="authTabRegister" type="button" class="btn btn-outline-primary">Register</button>
           </div>
-
           <div id="authError" class="alert alert-danger d-none"></div>
-
           <form id="authForm">
             <div class="mb-2" id="authNameWrap" style="display:none;">
               <label class="form-label">Name</label>
               <input id="authName" class="form-control" autocomplete="name" />
             </div>
-
             <div class="mb-2">
               <label class="form-label">Email</label>
               <input id="authEmail" class="form-control" type="email" autocomplete="email" required />
             </div>
-
             <div class="mb-2">
               <label class="form-label">Password</label>
               <input id="authPassword" class="form-control" type="password" autocomplete="current-password" required />
               <div class="form-text">Minimum 8 characters.</div>
             </div>
-
             <button id="authSubmit" type="submit" class="btn btn-primary w-100">Sign in</button>
           </form>
         </div>
@@ -282,22 +194,14 @@
     </div>
   </div>
 
-  <!-- Bootstrap 5 JS bundle (optional, for future modals/tooltips) -->
-  <script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-    crossorigin="anonymous">
-  </script>
-
-  <!-- Libraries (all working versions) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/bpmn-js@17.0.1/dist/bpmn-modeler.production.min.js"></script>
   <script src="https://unpkg.com/dmn-js@14.5.0/dist/dmn-modeler.production.min.js"></script>
   <script src="https://unpkg.com/cmmn-js@0.20.0/dist/cmmn-modeler.development.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
-  <!-- Auth and API integration -->
   <script type="module" src="js/auth.js?v=3"></script>
   <script type="module" src="js/api-client.js?v=3"></script>
-  <script type="module" src="js/main.js?v=3"></script>
+  <script type="module" src="js/main.js?v=4"></script>
 </body>
 </html>
