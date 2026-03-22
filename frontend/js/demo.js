@@ -1,4 +1,3 @@
-const APP = window.APP || { demo: { catalog: [] } };
 
 function normalizePath(path) {
   if (!path) return null;
@@ -19,12 +18,11 @@ export async function loadDemoCatalog() {
     throw new Error('Failed to load demo catalog');
   }
   const data = await response.json();
-  APP.demo.catalog = Array.isArray(data.examples) ? data.examples : [];
-  return APP.demo.catalog;
+  return Array.isArray(data.examples) ? data.examples : [];
 }
 
 export async function loadDemoProjectById(exampleId) {
-  const example = APP.demo.catalog.find((entry) => entry.id === exampleId);
+  const example = (window.APP?.demo?.catalog || []).find((entry) => entry.id === exampleId);
   if (!example) {
     throw new Error('Demo example not found');
   }

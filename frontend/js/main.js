@@ -859,7 +859,7 @@ async function loadGuestDemo() {
   APP.currentProjectId = null;
   uiSetProjectName('Demo (read-only)');
 
-  await loadDemoCatalog();
+  APP.demo.catalog = await loadDemoCatalog();
 
   uiRenderProjectList({
     items: APP.demo.catalog.map((example) => ({ id: example.id, title: example.title })),
