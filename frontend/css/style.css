@@ -25,7 +25,6 @@ body {
   font-weight: 600;
 }
 
-/* NEW: project name badge */
 .app-project-name {
   flex: 1;
   text-align: center;
@@ -75,6 +74,7 @@ body {
   border-right: 1px solid #ddd;
   padding: 8px;
   overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .app-workspace {
@@ -88,6 +88,7 @@ body {
   display: flex;
   gap: 0;
   border-bottom: 1px solid #dee2e6;
+  flex-shrink: 0;
 }
 
 .tab-button {
@@ -99,57 +100,87 @@ body {
 }
 
 .tab-button.active {
-  /* let Bootstrap nav-link active style dominate; minimal override */
   font-weight: 600;
 }
 
 .app-tab-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   position: relative;
 }
 
 .tab-panel {
   display: none;
+  flex-direction: column;
   height: 100%;
 }
 
 .tab-panel.active {
-  display: block;
+  display: flex;
+}
+
+/* Toolbar row inside each tab */
+.tab-toolbar {
+  flex-shrink: 0;
+  padding: 6px 8px;
+  border-bottom: 1px solid #dee2e6;
+  background: #fff;
+}
+
+/* Split: canvas left, XML right */
+.canvas-xml-split {
+  flex: 1;
+  display: flex;
+  min-height: 0;
 }
 
 .modeler-canvas {
-  width: 100%;
-  height: calc(100vh - 180px); /* adjust if header height changes */
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
 }
 
-/* XML preview panel under each canvas */
-.xml-container {
-  margin-top: 8px;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
+/* XML right pane */
+.xml-pane {
+  width: 380px;
+  flex-shrink: 0;
+  border-left: 2px solid #dee2e6;
+  display: flex;
+  flex-direction: column;
   background: #f8f9fa;
-  padding: 6px;
+}
+
+.xml-pane-header {
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 600;
+  border-bottom: 1px solid #dee2e6;
+  background: #f1f3f5;
+  flex-shrink: 0;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .xml-editor {
-  width: 100%;
-  height: 200px;
+  flex: 1;
   border: none;
   outline: none;
-  resize: vertical;
+  resize: none;
   font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
   font-size: 12px;
   background: #ffffff;
-  padding: 6px;
+  padding: 8px;
   box-sizing: border-box;
+  line-height: 1.5;
 }
 
+/* DMN tab: give modeler-canvas explicit height so DRD renders */
 #tab-dmn .modeler-canvas {
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  padding: 8px;
+  background: #fff;
 }
 
 .manifest-editor {
@@ -166,11 +197,17 @@ body {
   border-bottom: 1px solid #eee;
   background: #fafafa;
   font-size: 14px;
+  flex-shrink: 0;
 }
 
 .manifest-links ul {
   margin: 0;
   padding-left: 16px;
+}
+
+/* Manifest tab uses full split too */
+#tab-manifest .canvas-xml-split {
+  flex-direction: column;
 }
 
 .project-item {
