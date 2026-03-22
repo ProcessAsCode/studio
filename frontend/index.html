@@ -2,206 +2,1120 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Algomation Studio</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Algomation Studio — Visual Process Modeler</title>
+  <meta name="description" content="Model BPMN workflows, DMN decision tables and CMMN cases in one workspace. Package as UAPF and run anywhere.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous"/>
-  <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.1/dist/assets/diagram-js.css" />
-  <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.1/dist/assets/bpmn-font/css/bpmn.css" />
-  <link rel="stylesheet" href="https://unpkg.com/dmn-js@14.5.0/dist/assets/dmn-js-decision-table.css" />
-  <link rel="stylesheet" href="https://unpkg.com/dmn-js@14.5.0/dist/assets/dmn-js-drd.css" />
-  <link rel="stylesheet" href="https://unpkg.com/dmn-js@14.5.0/dist/assets/dmn-js-literal-expression.css" />
-  <link rel="stylesheet" href="https://unpkg.com/dmn-js@14.5.0/dist/assets/dmn-font/css/dmn.css" />
-  <link rel="stylesheet" href="https://unpkg.com/cmmn-js@0.20.0/dist/assets/diagram-js.css" />
-  <link rel="stylesheet" href="https://unpkg.com/cmmn-js@0.20.0/dist/assets/cmmn-font/css/cmmn.css" />
-  <link rel="stylesheet" href="css/style.css" />
+  <!-- Fonts: BrandCodex stack — Clash Display + Plus Jakarta Sans + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Clash Display via Fontshare -->
+  <link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap" rel="stylesheet">
+
+  <style>
+  /* ══════════════════════════════════════════
+     TOKENS
+  ══════════════════════════════════════════ */
+  :root {
+    /* Algomation hero palette */
+    --bg-900:  #061a24;
+    --bg-800:  #071e2a;
+    --bg-700:  #0a2e3e;
+    --bg-600:  #0b3b4f;
+    --cyan:    rgba(56,189,248,1);
+    --cyan-60: rgba(56,189,248,0.6);
+    --cyan-20: rgba(56,189,248,0.2);
+    --edge:    rgba(100,160,190,1);
+
+    /* Light section */
+    --surface: #f1f5f9;
+    --white:   #ffffff;
+    --ink:     #0f172a;
+    --muted:   #64748b;
+    --border:  #e2e8f0;
+
+    /* Accent */
+    --amber:   #f59e0b;
+
+    /* Typography */
+    --ff-display: 'Clash Display', sans-serif;
+    --ff-body:    'Plus Jakarta Sans', sans-serif;
+    --ff-mono:    'JetBrains Mono', monospace;
+  }
+
+  /* ══════════════════════════════════════════
+     RESET + BASE
+  ══════════════════════════════════════════ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--ff-body);
+    background: #f9fafb;
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+  a { text-decoration: none; }
+
+  /* ══════════════════════════════════════════
+     NAV
+  ══════════════════════════════════════════ */
+  .site-nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    /* starts transparent over hero, transitions handled via JS */
+    background: rgba(6,26,36,0);
+    transition: background 0.3s, border-color 0.3s;
+    border-bottom: 1px solid transparent;
+  }
+  .site-nav.scrolled {
+    background: rgba(6,26,36,0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom-color: rgba(56,189,248,0.1);
+  }
+  .nav-inner {
+    width: 100%;
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255,255,255,0.9);
+    font-family: var(--ff-display);
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .nav-brand-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+    flex-shrink: 0;
+  }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    list-style: none;
+  }
+  .nav-links a {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: rgba(203,213,225,0.65);
+    padding: 0.4rem 0.85rem;
+    border-radius: 6px;
+    letter-spacing: 0.02em;
+    transition: color 0.15s, background 0.15s;
+  }
+  .nav-links a:hover { color: #fff; background: rgba(255,255,255,0.07); }
+  .nav-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.3rem;
+    background: var(--white);
+    color: var(--bg-700);
+    border-radius: 6px;
+    font-family: var(--ff-body);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+    white-space: nowrap;
+  }
+  .nav-cta:hover {
+    background: #dff4fd;
+    box-shadow: 0 4px 20px rgba(56,189,248,0.25);
+    transform: translateY(-1px);
+  }
+  .nav-cta .arr { transition: transform 0.2s; }
+  .nav-cta:hover .arr { transform: translateX(3px); }
+
+  /* ══════════════════════════════════════════
+     HERO
+  ══════════════════════════════════════════ */
+  #hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: linear-gradient(165deg,
+      var(--bg-800) 0%,
+      var(--bg-600) 40%,
+      var(--bg-700) 70%,
+      var(--bg-900) 100%);
+  }
+
+  #hero-canvas {
+    position: absolute;
+    inset: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .hero-vignette {
+    position: absolute; inset: 0; z-index: 2;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 50%, transparent 0%, rgba(6,26,36,0.5) 100%),
+      radial-gradient(ellipse 70% 50% at 50% 110%, rgba(6,26,36,0.75) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 3;
+    text-align: center;
+    padding: 7rem 1.5rem 5rem;
+    max-width: 1000px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Pill */
+  .hero-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.9rem 0.3rem 0.55rem;
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.28);
+    border-radius: 999px;
+    font-family: var(--ff-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 2.5rem;
+    animation: riseIn 0.6s cubic-bezier(.22,1,.36,1) 0.05s both;
+  }
+  .pill-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--amber);
+    box-shadow: 0 0 6px var(--amber);
+    animation: blink 2.2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+  /* ── THE MAIN WORDMARK ── */
+  .hero-wordmark {
+    font-family: var(--ff-display);
+    font-size: clamp(2.8rem, 9vw, 7rem);
+    font-weight: 600;
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+    color: var(--white);
+    text-transform: uppercase;
+    white-space: nowrap;
+    margin-bottom: 0.6rem;
+    animation: riseIn 0.75s cubic-bezier(.22,1,.36,1) 0.15s both;
+    /* subtle glow matching hero canvas cyan */
+    text-shadow: 0 0 60px rgba(56,189,248,0.12), 0 0 120px rgba(56,189,248,0.06);
+  }
+  /* "STUDIO" gets the cyan tint */
+  .hero-wordmark .studio-word {
+    color: var(--cyan-60);
+  }
+  /* Thin separator between words */
+  .hero-wordmark .sep {
+    display: inline-block;
+    width: 0.15em;
+    height: 0.8em;
+    background: rgba(56,189,248,0.25);
+    vertical-align: middle;
+    margin: 0 0.35em 0.12em;
+    border-radius: 1px;
+  }
+
+  /* Notation strip below wordmark */
+  .hero-notations {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 2rem;
+    animation: riseIn 0.65s cubic-bezier(.22,1,.36,1) 0.22s both;
+  }
+  .hero-notations-line {
+    flex: 1;
+    height: 1px;
+    max-width: 140px;
+    background: linear-gradient(90deg, transparent, rgba(56,189,248,0.3));
+  }
+  .hero-notations-line.right {
+    background: linear-gradient(90deg, rgba(56,189,248,0.3), transparent);
+  }
+  .hero-notations-tags {
+    display: flex;
+    gap: 0;
+    border: 1px solid rgba(56,189,248,0.18);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .ntag {
+    font-family: var(--ff-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(56,189,248,0.55);
+    padding: 0.3rem 0.75rem;
+    border-right: 1px solid rgba(56,189,248,0.12);
+    white-space: nowrap;
+  }
+  .ntag:last-child { border-right: none; }
+
+  /* Tagline */
+  .hero-tagline {
+    font-size: clamp(0.9rem, 1.8vw, 1.05rem);
+    font-weight: 300;
+    color: rgba(203,213,225,0.82);
+    line-height: 1.8;
+    max-width: 540px;
+    margin-bottom: 2.5rem;
+    animation: riseIn 0.7s cubic-bezier(.22,1,.36,1) 0.3s both;
+  }
+
+  /* CTA group */
+  .hero-ctas {
+    display: flex;
+    gap: 0.9rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 4rem;
+    animation: riseIn 0.7s cubic-bezier(.22,1,.36,1) 0.38s both;
+  }
+  .btn-launch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.9rem 2.4rem;
+    background: var(--white);
+    color: var(--bg-700);
+    border-radius: 7px;
+    font-family: var(--ff-body);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+    box-shadow: 0 0 0 0 rgba(255,255,255,0);
+  }
+  .btn-launch:hover {
+    background: #dff4fd;
+    box-shadow: 0 8px 30px rgba(56,189,248,0.3);
+    transform: translateY(-2px);
+  }
+  .btn-launch .arr { transition: transform 0.2s; display: inline-block; }
+  .btn-launch:hover .arr { transform: translateX(4px); }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.9rem 1.9rem;
+    background: transparent;
+    color: rgba(203,213,225,0.75);
+    border: 1px solid rgba(203,213,225,0.2);
+    border-radius: 7px;
+    font-family: var(--ff-body);
+    font-size: 0.95rem;
+    font-weight: 400;
+    transition: border-color 0.2s, color 0.2s, transform 0.15s;
+  }
+  .btn-ghost:hover {
+    border-color: rgba(203,213,225,0.4);
+    color: #fff;
+    transform: translateY(-2px);
+  }
+
+  /* Meta row */
+  .hero-meta {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    animation: riseIn 0.7s cubic-bezier(.22,1,.36,1) 0.46s both;
+  }
+  .hero-meta-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+  }
+  .hero-meta-label {
+    font-family: var(--ff-mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(148,163,184,0.45);
+  }
+  .hero-meta-value {
+    font-family: var(--ff-mono);
+    font-size: 0.72rem;
+    color: rgba(56,189,248,0.65);
+    font-weight: 500;
+  }
+
+  /* Scroll cue */
+  .scroll-cue {
+    position: absolute;
+    bottom: 2rem; left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    color: rgba(148,163,184,0.28);
+    font-size: 1rem;
+    animation: bobY 2.5s ease-in-out infinite;
+  }
+  @keyframes bobY {
+    0%,100%{ transform: translateX(-50%) translateY(0); }
+    50%    { transform: translateX(-50%) translateY(7px); }
+  }
+
+  @keyframes riseIn {
+    from { opacity:0; transform: translateY(16px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* ══════════════════════════════════════════
+     SECTION SHARED
+  ══════════════════════════════════════════ */
+  .section { padding: 5.5rem 1.5rem; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .s-kicker {
+    font-family: var(--ff-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--bg-600);
+    margin-bottom: 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+  .s-kicker::before {
+    content: '';
+    width: 22px; height: 1px;
+    background: var(--bg-600);
+    display: inline-block;
+  }
+  .s-title {
+    font-family: var(--ff-display);
+    font-size: clamp(1.8rem, 3.5vw, 2.75rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    line-height: 1.1;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+  }
+  .s-body {
+    font-size: 0.975rem;
+    font-weight: 400;
+    color: var(--muted);
+    line-height: 1.8;
+    max-width: 580px;
+  }
+
+  /* ══════════════════════════════════════════
+     MODELERS SECTION
+  ══════════════════════════════════════════ */
+  .modelers-section { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .modelers-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-top: 3.5rem;
+  }
+  .modeler-card {
+    background: var(--white);
+    padding: 2.5rem 2rem;
+    transition: background 0.2s;
+  }
+  .modeler-card:hover { background: #f7fbff; }
+
+  .mc-chip {
+    display: inline-block;
+    font-family: var(--ff-mono);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    margin-bottom: 1.4rem;
+  }
+  .chip-bpmn { background: rgba(11,59,79,0.07); color: #0a5070; }
+  .chip-dmn  { background: rgba(180,83,9,0.07);  color: #92400e; }
+  .chip-cmmn { background: rgba(3,105,161,0.08);  color: #0369a1; }
+
+  .mc-icon {
+    width: 48px; height: 48px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: 1.2rem;
+  }
+  .icon-bg-bpmn { background: rgba(11,59,79,0.07); }
+  .icon-bg-dmn  { background: rgba(245,158,11,0.1); }
+  .icon-bg-cmmn { background: rgba(56,189,248,0.1); }
+
+  .mc-title {
+    font-family: var(--ff-display);
+    font-size: 1.3rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 0.6rem;
+  }
+  .mc-desc {
+    font-size: 0.86rem;
+    font-weight: 400;
+    color: var(--muted);
+    line-height: 1.75;
+    margin-bottom: 1.2rem;
+  }
+  .mc-feats {
+    list-style: none; padding: 0;
+    display: flex; flex-direction: column; gap: 0.35rem;
+  }
+  .mc-feats li {
+    font-size: 0.78rem;
+    color: var(--muted);
+    display: flex; align-items: flex-start; gap: 0.45rem; line-height: 1.5;
+  }
+  .mc-feats li::before { content:'›'; color: var(--bg-600); font-weight:700; flex-shrink:0; margin-top:1px; }
+
+  /* ══════════════════════════════════════════
+     UAPF CALLOUT
+  ══════════════════════════════════════════ */
+  .uapf-callout {
+    background: var(--white);
+    border-top: 1px solid var(--border);
+  }
+  .uapf-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: center;
+  }
+  .uapf-code-block {
+    background: var(--bg-900);
+    border: 1px solid rgba(56,189,248,0.15);
+    border-radius: 12px;
+    padding: 1.75rem;
+    font-family: var(--ff-mono);
+    font-size: 0.78rem;
+    line-height: 2;
+    color: rgba(203,213,225,0.8);
+    position: relative;
+    overflow: hidden;
+  }
+  .uapf-code-block::before {
+    content: '';
+    position: absolute; top:0; left:0; right:0; height:2px;
+    background: linear-gradient(90deg, var(--cyan-20), var(--cyan-60), var(--cyan-20));
+  }
+  .uc-dir  { color: rgba(56,189,248,0.7); font-weight:500; }
+  .uc-file { color: rgba(203,213,225,0.7); }
+  .uc-json { color: #f59e0b; }
+  .uc-xml  { color: rgba(56,189,248,0.55); }
+  .uc-note { color: rgba(100,116,139,0.7); font-size:0.72rem; }
+  .uc-in   { padding-left:1.2em; }
+  .uc-in2  { padding-left:2.4em; }
+  .uc-in3  { padding-left:3.6em; }
+
+  .uapf-props { list-style:none; padding:0; display:flex; flex-direction:column; gap:1.25rem; margin-top:2rem; }
+  .up-item { display:flex; gap:0.9rem; align-items:flex-start; }
+  .up-dot  { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+  .up-dot-c { background: var(--cyan-60); }
+  .up-dot-a { background: var(--amber); }
+  .up-dot-g { background: #4ade80; }
+  .up-dot-m { background: var(--muted); }
+  .up-label { font-family:var(--ff-mono); font-size:0.73rem; color:rgba(56,189,248,0.7); font-weight:500; display:block; margin-bottom:0.2rem; }
+  .up-text  { font-size:0.86rem; color:var(--muted); line-height:1.7; }
+
+  /* ══════════════════════════════════════════
+     WORKFLOW
+  ══════════════════════════════════════════ */
+  .workflow-section { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .steps-row {
+    display: grid;
+    grid-template-columns: repeat(4,1fr);
+    gap: 0;
+    margin-top: 3.5rem;
+    position: relative;
+  }
+  .steps-row::before {
+    content:'';
+    position:absolute; top:28px;
+    left:calc(12.5% + 20px); right:calc(12.5% + 20px);
+    height:1px;
+    background:linear-gradient(90deg, var(--bg-600), rgba(245,158,11,0.5) 50%, var(--bg-600));
+    z-index:0;
+  }
+  .step {
+    display:flex; flex-direction:column; align-items:center;
+    text-align:center; padding:0 1rem; position:relative; z-index:1;
+  }
+  .step-circle {
+    width:44px; height:44px; border-radius:50%;
+    border:2px solid var(--bg-600); background:var(--white);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--ff-display); font-size:1.15rem;
+    color:var(--bg-600); margin-bottom:1.2rem;
+    transition:background 0.2s, color 0.2s;
+  }
+  .step:hover .step-circle { background:var(--bg-600); color:var(--white); }
+  .step-circle.accent-amber { border-color:var(--amber); color:var(--amber); }
+  .step:hover .step-circle.accent-amber { background:var(--amber); color:var(--white); border-color:var(--amber); }
+  .step h4 {
+    font-family:var(--ff-display); font-size:0.95rem; font-weight:600;
+    letter-spacing:0.06em; text-transform:uppercase; color:var(--ink); margin-bottom:0.45rem;
+  }
+  .step p { font-size:0.78rem; color:var(--muted); line-height:1.65; max-width:145px; }
+
+  /* ══════════════════════════════════════════
+     TECH STRIP
+  ══════════════════════════════════════════ */
+  .tech-strip {
+    background: var(--bg-800);
+    padding: 2.75rem 1.5rem;
+    border-top: 1px solid rgba(56,189,248,0.1);
+    border-bottom: 1px solid rgba(56,189,248,0.1);
+  }
+  .tech-inner {
+    max-width: 1100px; margin: 0 auto;
+    display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+  }
+  .tech-lbl {
+    font-family:var(--ff-mono); font-size:0.62rem; letter-spacing:0.18em;
+    text-transform:uppercase; color:rgba(148,163,184,0.4); white-space:nowrap; flex-shrink:0;
+  }
+  .tech-sep { width:1px; height:24px; background:rgba(56,189,248,0.12); flex-shrink:0; }
+  .tech-tags { display:flex; flex-wrap:wrap; gap:0.4rem; flex:1; }
+  .tech-tag {
+    font-family:var(--ff-mono); font-size:0.7rem;
+    padding:0.22rem 0.65rem; border-radius:4px;
+    background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.13);
+    color:rgba(56,189,248,0.65); letter-spacing:0.04em; white-space:nowrap;
+    transition:background 0.15s, border-color 0.15s;
+  }
+  .tech-tag:hover { background:rgba(56,189,248,0.1); border-color:rgba(56,189,248,0.28); }
+
+  /* ══════════════════════════════════════════
+     BOTTOM CTA
+  ══════════════════════════════════════════ */
+  .bottom-cta {
+    background: linear-gradient(165deg, var(--bg-800) 0%, var(--bg-600) 55%, var(--bg-900) 100%);
+    padding: 6rem 1.5rem;
+    text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .bottom-cta::before {
+    content:'STUDIO';
+    position:absolute; font-family:var(--ff-display); font-weight:600;
+    font-size:clamp(6rem,18vw,16rem); letter-spacing:0.1em;
+    color:rgba(255,255,255,0.022);
+    top:50%; left:50%; transform:translate(-50%,-50%);
+    white-space:nowrap; pointer-events:none; user-select:none;
+    text-transform:uppercase;
+  }
+  .bottom-cta-inner { position:relative; z-index:1; max-width:660px; margin:0 auto; }
+  .bottom-cta h2 {
+    font-family:var(--ff-display); font-size:clamp(2rem,4.5vw,3.5rem); font-weight:600;
+    letter-spacing:-0.01em; text-transform:uppercase;
+    color:var(--white); line-height:1.05; margin-bottom:1.1rem;
+  }
+  .bottom-cta p {
+    font-size:1rem; color:rgba(203,213,225,0.7); line-height:1.75; margin-bottom:2.25rem;
+  }
+  .bottom-cta-btns { display:flex; gap:0.9rem; justify-content:center; flex-wrap:wrap; }
+
+  /* ══════════════════════════════════════════
+     FOOTER
+  ══════════════════════════════════════════ */
+  .site-footer {
+    background: var(--bg-900);
+    border-top: 1px solid rgba(56,189,248,0.08);
+    padding: 2rem 1.5rem;
+  }
+  .footer-inner {
+    max-width:1100px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;
+  }
+  .footer-links { display:flex; align-items:center; gap:0; flex-wrap:wrap; }
+  .footer-links a {
+    font-size:0.8rem; color:rgba(148,163,184,0.5);
+    padding:0 0.9rem; border-right:1px solid rgba(148,163,184,0.12);
+    transition:color 0.15s;
+  }
+  .footer-links a:first-child { padding-left:0; }
+  .footer-links a:last-child  { border-right:none; }
+  .footer-links a:hover { color:rgba(148,163,184,0.85); }
+  .footer-copy { font-family:var(--ff-mono); font-size:0.68rem; color:rgba(100,116,139,0.45); }
+
+  /* ══════════════════════════════════════════
+     RESPONSIVE
+  ══════════════════════════════════════════ */
+  @media (max-width: 900px) {
+    .hero-wordmark { white-space:normal; }
+    .modelers-grid { grid-template-columns:1fr; gap:0; }
+    .modeler-card { border-bottom:1px solid var(--border); }
+    .modeler-card:last-child { border-bottom:none; }
+    .uapf-split { grid-template-columns:1fr; gap:2.5rem; }
+    .steps-row { grid-template-columns:1fr 1fr; gap:2rem; }
+    .steps-row::before { display:none; }
+    .nav-links { display:none; }
+  }
+  @media (max-width: 520px) {
+    .steps-row { grid-template-columns:1fr; }
+    .hero-meta { gap:1.25rem; }
+  }
+  </style>
 </head>
+
 <body>
 
-  <header class="app-header">
-    <div class="app-logo">Algomation Studio</div>
-    <div id="current-project-name" class="app-project-name text-truncate">No project selected</div>
-    <div class="app-actions">
-      <div class="project-actions">
-        <button id="btn-new-project" class="btn btn-sm btn-primary me-2">New Project</button>
-        <button id="btn-save-project" class="btn btn-sm btn-outline-primary me-2">Save</button>
-        <button id="btn-delete-project" class="btn btn-sm btn-outline-danger me-2">Delete</button>
-        <button id="btn-import-uapf" class="btn btn-sm btn-outline-secondary me-2">Import UAPF</button>
-        <button id="btn-export-uapf" class="btn btn-sm btn-outline-secondary me-2">Export UAPF</button>
-        <button id="btn-about" class="btn btn-sm btn-outline-info">About</button>
+<!-- NAV -->
+<nav class="site-nav" id="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <span class="nav-brand-dot"></span>
+      Algomation Studio
+    </a>
+    <ul class="nav-links">
+      <li><a href="#modelers">Modelers</a></li>
+      <li><a href="#workflow">How it works</a></li>
+      <li><a href="https://algomation.io/uapf/" target="_blank" rel="noopener">UAPF</a></li>
+      <li><a href="https://algomation.io" target="_blank" rel="noopener">Algomation.io ↗</a></li>
+    </ul>
+    <a href="./app.html" class="nav-cta">
+      Open Studio <span class="arr">→</span>
+    </a>
+  </div>
+</nav>
+
+
+<!-- ══════════ HERO ══════════ -->
+<section id="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-vignette"></div>
+
+  <div class="hero-content">
+
+    <div class="hero-pill">
+      <span class="pill-dot"></span>
+      Beta · Free to try
+    </div>
+
+    <h1 class="hero-wordmark">
+      Algomation<span class="sep"></span><span class="studio-word">Studio</span>
+    </h1>
+
+    <div class="hero-notations">
+      <div class="hero-notations-line"></div>
+      <div class="hero-notations-tags">
+        <span class="ntag">BPMN 2.x</span>
+        <span class="ntag">DMN 1.3+</span>
+        <span class="ntag">CMMN 1.1</span>
+        <span class="ntag">UAPF Export</span>
       </div>
-      <div id="auth-actions" class="auth-actions">
-        <button id="btn-sign-in" class="btn btn-sm btn-light me-2">Sign in</button>
-        <button id="btn-sign-up" class="btn btn-sm btn-outline-light">Sign up</button>
+      <div class="hero-notations-line right"></div>
+    </div>
+
+    <p class="hero-tagline">
+      A collaborative workspace for modeling business processes, decision tables
+      and case logic — then packaging everything as a single, executable UAPF artifact.
+    </p>
+
+    <div class="hero-ctas">
+      <a href="./app.html" class="btn-launch">
+        Open Studio <span class="arr">→</span>
+      </a>
+      <a href="https://algomation.io/uapf/" target="_blank" rel="noopener" class="btn-ghost">
+        About UAPF ↗
+      </a>
+    </div>
+
+    <div class="hero-meta">
+      <div class="hero-meta-item">
+        <span class="hero-meta-label">Process modeling</span>
+        <span class="hero-meta-value">BPMN 2.0</span>
       </div>
-      <div id="user-menu" class="user-menu dropdown hidden">
-        <button class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-          Hello, <span id="user-greeting">User</span>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li><button id="btn-profile" class="dropdown-item">Profile</button></li>
-          <li><button id="btn-logout" class="dropdown-item">Logout</button></li>
+      <div class="hero-meta-item">
+        <span class="hero-meta-label">Decision tables</span>
+        <span class="hero-meta-value">DMN 1.3+</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="hero-meta-label">Case management</span>
+        <span class="hero-meta-value">CMMN 1.1</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="hero-meta-label">Export</span>
+        <span class="hero-meta-value">.uapf · .xml</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="hero-meta-label">Auth</span>
+        <span class="hero-meta-value">Auth0 · SSO</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-cue" aria-hidden="true">↓</div>
+</section>
+
+
+<!-- ══════════ MODELERS ══════════ -->
+<section class="section modelers-section" id="modelers">
+  <div class="container">
+    <div class="s-kicker">Three Modelers. One Workspace.</div>
+    <h2 class="s-title">Everything a process needs.</h2>
+    <p class="s-body">
+      Studio embeds the full bpmn.js, dmn.js and cmmn.js toolkits in a unified
+      interface. Switch tabs, inspect live XML, and import or export across all three
+      notations without leaving the page.
+    </p>
+
+    <div class="modelers-grid">
+
+      <div class="modeler-card">
+        <span class="mc-chip chip-bpmn">BPMN 2.0</span>
+        <div class="mc-icon icon-bg-bpmn">🔷</div>
+        <div class="mc-title">Process Modeling</div>
+        <p class="mc-desc">Draw sequence flows, gateways, sub-processes and service tasks on a live BPMN canvas backed by bpmn.js 17.</p>
+        <ul class="mc-feats">
+          <li>Full bpmn.js 17 modeler</li>
+          <li>Visual ↔ XML toggle</li>
+          <li>Import existing BPMN XML</li>
+          <li>Pools, lanes, participants</li>
+          <li>Export as BPMN 2.0 XML</li>
         </ul>
       </div>
-    </div>
-  </header>
 
-  <div id="demo-mode-banner" class="demo-banner hidden">
-    Demo mode (read-only). Sign in to create your workspace.
-  </div>
+      <div class="modeler-card">
+        <span class="mc-chip chip-dmn">DMN 1.3+</span>
+        <div class="mc-icon icon-bg-dmn">🟧</div>
+        <div class="mc-title">Decision Tables</div>
+        <p class="mc-desc">Build decision requirement graphs and decision tables with FEEL expressions and hit policies using dmn.js 14.</p>
+        <ul class="mc-feats">
+          <li>DRD (Decision Requirements Diagram)</li>
+          <li>Hit policies: U, A, F, R, C, O, P</li>
+          <li>FEEL expression language</li>
+          <li>Multi-output decision tables</li>
+          <li>Export as DMN XML</li>
+        </ul>
+      </div>
 
-  <main class="app-main">
-    <aside class="app-sidebar">
-      <h6 class="text-uppercase text-muted mb-2">Projects</h6>
-      <ul id="project-list" class="list-unstyled mb-0"></ul>
-    </aside>
+      <div class="modeler-card">
+        <span class="mc-chip chip-cmmn">CMMN 1.1</span>
+        <div class="mc-icon icon-bg-cmmn">🔵</div>
+        <div class="mc-title">Case Management</div>
+        <p class="mc-desc">Model adaptive, human-in-the-loop cases with discretionary tasks, milestones and sentries via cmmn.js 0.20.</p>
+        <ul class="mc-feats">
+          <li>Discretionary &amp; required stages</li>
+          <li>Entry and exit sentries</li>
+          <li>Case file items</li>
+          <li>Milestone events</li>
+          <li>Export as CMMN XML</li>
+        </ul>
+      </div>
 
-    <section class="app-workspace">
-      <nav class="app-tabs nav nav-tabs">
-        <button class="tab-button nav-link active" data-tab="bpmn">Process (BPMN)</button>
-        <button class="tab-button nav-link" data-tab="dmn">Decisions (DMN)</button>
-        <button class="tab-button nav-link" data-tab="cmmn">Cases (CMMN)</button>
-        <button class="tab-button nav-link" data-tab="manifest">Manifest</button>
-      </nav>
-
-      <section class="app-tab-content">
-
-        <!-- BPMN Tab -->
-        <div id="tab-bpmn" class="tab-panel active">
-          <div class="tab-toolbar d-flex justify-content-between align-items-center">
-            <div>
-              <button id="btn-bpmn-import-xml" class="btn btn-sm btn-outline-secondary me-1">Import BPMN XML</button>
-              <button id="btn-bpmn-export-xml" class="btn btn-sm btn-outline-secondary">Export BPMN XML</button>
-            </div>
-            <button id="btn-bpmn-toggle-xml" class="btn btn-sm btn-outline-secondary">Show XML</button>
-          </div>
-          <div class="canvas-xml-split">
-            <div id="bpmn-canvas" class="modeler-canvas"></div>
-            <div id="bpmn-xml-container" class="xml-pane" style="display:none;">
-              <div class="xml-pane-header">BPMN XML</div>
-              <textarea id="bpmn-xml-editor" class="xml-editor" spellcheck="false"></textarea>
-            </div>
-          </div>
-        </div>
-
-        <!-- DMN Tab -->
-        <div id="tab-dmn" class="tab-panel">
-          <div class="tab-toolbar d-flex justify-content-between align-items-center">
-            <div>
-              <button id="btn-dmn-back-to-table" class="btn btn-sm btn-outline-primary me-2" style="display:none;">← Decision Table</button>
-              <button id="btn-dmn-import-xml" class="btn btn-sm btn-outline-secondary me-1">Import DMN XML</button>
-              <button id="btn-dmn-export-xml" class="btn btn-sm btn-outline-secondary">Export DMN XML</button>
-            </div>
-            <button id="btn-dmn-toggle-xml" class="btn btn-sm btn-outline-secondary">Show XML</button>
-          </div>
-          <div class="canvas-xml-split">
-            <div id="dmn-canvas" class="modeler-canvas"></div>
-            <div id="dmn-xml-container" class="xml-pane" style="display:none;">
-              <div class="xml-pane-header">DMN XML</div>
-              <textarea id="dmn-xml-editor" class="xml-editor" spellcheck="false"></textarea>
-            </div>
-          </div>
-        </div>
-
-        <!-- CMMN Tab -->
-        <div id="tab-cmmn" class="tab-panel">
-          <div class="tab-toolbar d-flex justify-content-between align-items-center">
-            <div>
-              <button id="btn-cmmn-import-xml" class="btn btn-sm btn-outline-secondary me-1">Import CMMN XML</button>
-              <button id="btn-cmmn-export-xml" class="btn btn-sm btn-outline-secondary">Export CMMN XML</button>
-            </div>
-            <button id="btn-cmmn-toggle-xml" class="btn btn-sm btn-outline-secondary">Show XML</button>
-          </div>
-          <div class="canvas-xml-split">
-            <div id="cmmn-canvas" class="modeler-canvas"></div>
-            <div id="cmmn-xml-container" class="xml-pane" style="display:none;">
-              <div class="xml-pane-header">CMMN XML</div>
-              <textarea id="cmmn-xml-editor" class="xml-editor" spellcheck="false"></textarea>
-            </div>
-          </div>
-        </div>
-
-        <!-- Manifest Tab -->
-        <div id="tab-manifest" class="tab-panel">
-          <div class="canvas-xml-split" style="flex-direction:column;">
-            <div id="manifest-links" class="manifest-links"></div>
-            <textarea id="manifest-editor" class="manifest-editor" spellcheck="false"></textarea>
-          </div>
-        </div>
-
-      </section>
-    </section>
-  </main>
-
-  <!-- Hidden file inputs -->
-  <input type="file" id="uapf-file-input" accept=".uapf" style="display:none" />
-  <input type="file" id="bpmn-xml-file-input" accept=".bpmn,.xml" style="display:none" />
-  <input type="file" id="dmn-xml-file-input" accept=".dmn,.xml" style="display:none" />
-  <input type="file" id="cmmn-xml-file-input" accept=".cmmn,.xml" style="display:none" />
-
-  <!-- About Modal -->
-  <div id="about-modal" class="modal-backdrop" style="display:none;">
-    <div class="modal">
-      <h2>About Algomation Studio</h2>
-      <p><strong>Algomation Studio</strong> is a visual editor for BPMN, DMN and CMMN models bundled into a Unified Algorithmic Process Format (UAPF) archive.</p>
-      <ul>
-        <li>Author processes in BPMN</li>
-        <li>Define decisions in DMN</li>
-        <li>Model cases in CMMN</li>
-        <li>Export all into a single .uapf file</li>
-      </ul>
-      <p>UAPF is intended as a machine-readable container that AI agents and runtimes can execute as part of an "algorithmated" enterprise.</p>
-      <p>Learn more at: <a href="https://algomation.io/" target="_blank">algomation.io</a></p>
-      <button id="about-close">Close</button>
     </div>
   </div>
+</section>
 
-  <div id="toast-container" class="toast-container"></div>
 
-  <!-- Auth Modal -->
-  <div class="modal fade" id="authModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="authModalTitle">Sign in</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="btn-group w-100 mb-3" role="group">
-            <button id="authTabLogin" type="button" class="btn btn-outline-primary active">Sign in</button>
-            <button id="authTabRegister" type="button" class="btn btn-outline-primary">Register</button>
-          </div>
-          <div id="authError" class="alert alert-danger d-none"></div>
-          <form id="authForm">
-            <div class="mb-2" id="authNameWrap" style="display:none;">
-              <label class="form-label">Name</label>
-              <input id="authName" class="form-control" autocomplete="name" />
+<!-- ══════════ UAPF CALLOUT ══════════ -->
+<section class="section uapf-callout">
+  <div class="container">
+    <div class="uapf-split">
+
+      <!-- Code block -->
+      <div class="uapf-code-block">
+        <div class="uc-dir">📁 my-process.uapf/</div>
+        <div class="uc-in"><span class="uc-json">📄 manifest.json</span> <span class="uc-note">← typed metadata</span></div>
+        <div class="uc-in uc-dir">📁 models/</div>
+        <div class="uc-in2 uc-dir">📁 bpmn/</div>
+        <div class="uc-in3"><span class="uc-xml">📄 main.bpmn.xml</span></div>
+        <div class="uc-in2 uc-dir">📁 dmn/</div>
+        <div class="uc-in3"><span class="uc-xml">📄 eligibility.dmn.xml</span></div>
+        <div class="uc-in2 uc-dir">📁 cmmn/</div>
+        <div class="uc-in3"><span class="uc-xml">📄 review.cmmn.xml</span></div>
+        <div class="uc-in uc-dir">📁 tests/</div>
+        <div class="uc-in2"><span class="uc-file">📄 happy-path.json</span></div>
+        <div class="uc-in uc-dir">📁 docs/</div>
+        <div class="uc-in2"><span class="uc-file">📄 overview.md</span></div>
+      </div>
+
+      <!-- Description -->
+      <div>
+        <div class="s-kicker">UAPF Export</div>
+        <h2 class="s-title">One package.<br>Every model.</h2>
+        <p class="s-body">
+          Export your project as a signed <code style="font-family:var(--ff-mono);font-size:0.85em;color:#0a5070;">.uapf</code> archive — a portable, versioned artifact that bundles all three notation files with a typed manifest and test scenarios.
+        </p>
+        <ul class="uapf-props">
+          <li class="up-item">
+            <div class="up-dot up-dot-c"></div>
+            <div>
+              <span class="up-label">Stable identifiers</span>
+              <p class="up-text">Every process, decision and task gets a URI-based ID that engines and AI agents can reference unambiguously.</p>
             </div>
-            <div class="mb-2">
-              <label class="form-label">Email</label>
-              <input id="authEmail" class="form-control" type="email" autocomplete="email" required />
+          </li>
+          <li class="up-item">
+            <div class="up-dot up-dot-a"></div>
+            <div>
+              <span class="up-label">Versioning & lifecycle</span>
+              <p class="up-text">Semantic versioning and lifecycle status (draft → active → deprecated) baked into the manifest.</p>
             </div>
-            <div class="mb-2">
-              <label class="form-label">Password</label>
-              <input id="authPassword" class="form-control" type="password" autocomplete="current-password" required />
-              <div class="form-text">Minimum 8 characters.</div>
+          </li>
+          <li class="up-item">
+            <div class="up-dot up-dot-g"></div>
+            <div>
+              <span class="up-label">Engine &amp; agent ready</span>
+              <p class="up-text">Run in any UAPF Engine or invoke from AI agents via MCP — no reformatting required.</p>
             </div>
-            <button id="authSubmit" type="submit" class="btn btn-primary w-100">Sign in</button>
-          </form>
-        </div>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ WORKFLOW ══════════ -->
+<section class="section workflow-section" id="workflow">
+  <div class="container">
+    <div class="s-kicker">How It Works</div>
+    <h2 class="s-title">Model. Package. Deploy.</h2>
+    <p class="s-body">From a blank canvas to a governed, executable artifact in four steps.</p>
+
+    <div class="steps-row">
+      <div class="step">
+        <div class="step-circle">1</div>
+        <h4>Create project</h4>
+        <p>Sign in and create a named project. Models autosave to the cloud.</p>
+      </div>
+      <div class="step">
+        <div class="step-circle">2</div>
+        <h4>Model</h4>
+        <p>Draw the BPMN flow, build DMN tables, add a CMMN case for human-judgment steps.</p>
+      </div>
+      <div class="step">
+        <div class="step-circle">3</div>
+        <h4>Review</h4>
+        <p>Toggle to XML at any time, import existing models, inspect the generated manifest.</p>
+      </div>
+      <div class="step">
+        <div class="step-circle accent-amber">4</div>
+        <h4>Export UAPF</h4>
+        <p>One click packs all models and the manifest into a <code style="font-family:var(--ff-mono);font-size:.8em;">.uapf</code> archive.</p>
       </div>
     </div>
   </div>
+</section>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/bpmn-js@17.0.1/dist/bpmn-modeler.production.min.js"></script>
-  <script src="https://unpkg.com/dmn-js@14.5.0/dist/dmn-modeler.production.min.js"></script>
-  <script src="https://unpkg.com/cmmn-js@0.20.0/dist/cmmn-modeler.development.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
-  <script type="module" src="js/auth.js?v=3"></script>
-  <script type="module" src="js/api-client.js?v=3"></script>
-  <script type="module" src="js/main.js?v=4"></script>
+<!-- ══════════ TECH STRIP ══════════ -->
+<div class="tech-strip">
+  <div class="tech-inner">
+    <span class="tech-lbl">Built on</span>
+    <div class="tech-sep"></div>
+    <div class="tech-tags">
+      <span class="tech-tag">bpmn-js 17</span>
+      <span class="tech-tag">dmn-js 14</span>
+      <span class="tech-tag">cmmn-js 0.20</span>
+      <span class="tech-tag">JSZip 3.10</span>
+      <span class="tech-tag">Node.js 20</span>
+      <span class="tech-tag">Express 4</span>
+      <span class="tech-tag">PostgreSQL 15</span>
+      <span class="tech-tag">Redis 7</span>
+      <span class="tech-tag">Auth0</span>
+      <span class="tech-tag">Docker</span>
+      <span class="tech-tag">Nginx</span>
+      <span class="tech-tag">UAPF v1</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════ BOTTOM CTA ══════════ -->
+<section class="bottom-cta">
+  <div class="bottom-cta-inner">
+    <h2>Ready to algorithmize your processes?</h2>
+    <p>
+      Algomation Studio is free to try. Sign in, model a process in minutes
+      and export your first UAPF package.
+    </p>
+    <div class="bottom-cta-btns">
+      <a href="./app.html" class="btn-launch">
+        Open Studio <span class="arr">→</span>
+      </a>
+      <a href="https://algomation.io/uapf/" target="_blank" rel="noopener" class="btn-ghost">
+        Learn about UAPF
+      </a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-links">
+      <a href="https://algomation.io" target="_blank" rel="noopener">Algomation.io</a>
+      <a href="https://algomation.io/uapf/" target="_blank" rel="noopener">UAPF Standard</a>
+      <a href="https://github.com/UAPFormat" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://algomation.io/contact" target="_blank" rel="noopener">Contact</a>
+    </div>
+    <div class="footer-copy">© <span id="yr"></span> Algomation SIA. Algomation Studio.</div>
+  </div>
+</footer>
+
+
+<!-- ══════════ CANVAS ANIMATION (exact engine from algomation.io) ══════════ -->
+<script>
+(function(){
+  var canvas=document.getElementById('hero-canvas');
+  if(!canvas)return;
+  var ctx=canvas.getContext('2d'),W,H,dpr,nodes=[],edges=[],particles=[];
+
+  var NC=20,EDGE_P=0.22,PSPEED=0.58;
+  var GL='rgba(56,189,248,',NF='rgba(11,59,79,',EF='rgba(100,160,190,';
+
+  function resize(){
+    var hero=document.getElementById('hero');
+    dpr=window.devicePixelRatio||1;
+    W=hero.offsetWidth; H=hero.offsetHeight;
+    canvas.width=W*dpr; canvas.height=H*dpr;
+    canvas.style.width=W+'px'; canvas.style.height=H+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  function R(a,b){return a+Math.random()*(b-a);}
+
+  function build(){
+    nodes=[];edges=[];particles=[];
+    var p=80;
+    for(var i=0;i<NC;i++){
+      var t=['rect','diamond','circle'][~~(Math.random()*3)];
+      nodes.push({x:R(p,W-p),y:R(p,H-p),vx:R(-.12,.12),vy:R(-.08,.08),
+        sz:R(16,30),type:t,ph:R(0,6.28),ps:R(.008,.018)});
+    }
+    for(var i=0;i<nodes.length;i++)for(var j=i+1;j<nodes.length;j++){
+      var dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<350&&Math.random()<EDGE_P){
+        edges.push({a:i,b:j});
+        if(Math.random()<.65)particles.push({ei:edges.length-1,t:Math.random(),sp:R(.001,.003)*PSPEED,sz:R(2,4.5)});
+      }
+    }
+  }
+
+  function drawN(n){
+    var s=n.sz,g=.18+Math.sin(n.ph)*.08;
+    ctx.save();ctx.translate(n.x,n.y);
+    ctx.shadowColor=GL+'0.35)';ctx.shadowBlur=16;
+    ctx.strokeStyle=GL+(g+.12).toFixed(2)+')';
+    ctx.fillStyle=NF+(g*.35).toFixed(2)+')';
+    ctx.lineWidth=1.3;
+    if(n.type==='rect'){
+      var r=4,hw=s*.72,hh=s*.46;
+      ctx.beginPath();ctx.moveTo(-hw+r,-hh);ctx.lineTo(hw-r,-hh);
+      ctx.quadraticCurveTo(hw,-hh,hw,-hh+r);ctx.lineTo(hw,hh-r);
+      ctx.quadraticCurveTo(hw,hh,hw-r,hh);ctx.lineTo(-hw+r,hh);
+      ctx.quadraticCurveTo(-hw,hh,-hw,hh-r);ctx.lineTo(-hw,-hh+r);
+      ctx.quadraticCurveTo(-hw,-hh,-hw+r,-hh);ctx.closePath();
+      ctx.fill();ctx.stroke();
+    }else if(n.type==='diamond'){
+      ctx.beginPath();ctx.moveTo(0,-s*.55);ctx.lineTo(s*.55,0);
+      ctx.lineTo(0,s*.55);ctx.lineTo(-s*.55,0);ctx.closePath();
+      ctx.fill();ctx.stroke();
+    }else{
+      ctx.beginPath();ctx.arc(0,0,s*.42,0,6.28);ctx.fill();ctx.stroke();
+      ctx.beginPath();ctx.arc(0,0,s*.34,0,6.28);
+      ctx.strokeStyle=GL+(g*.45).toFixed(2)+')';ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawE(e){
+    var a=nodes[e.a],b=nodes[e.b];
+    var dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy);
+    var al=Math.max(0,.14-d*.00025);
+    ctx.strokeStyle=EF+al.toFixed(3)+')';ctx.lineWidth=.9;
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  }
+
+  function drawP(p){
+    var e=edges[p.ei];if(!e)return;
+    var a=nodes[e.a],b=nodes[e.b];
+    var x=a.x+(b.x-a.x)*p.t,y=a.y+(b.y-a.y)*p.t;
+    var g=.45+Math.sin(p.t*3.14)*.55;
+    ctx.save();
+    ctx.shadowColor=GL+'0.7)';ctx.shadowBlur=10;
+    ctx.fillStyle=GL+g.toFixed(2)+')';
+    ctx.beginPath();ctx.arc(x,y,p.sz,0,6.28);ctx.fill();
+    ctx.restore();
+  }
+
+  function upd(){
+    var pad=-50;
+    for(var i=0;i<nodes.length;i++){
+      var n=nodes[i];n.x+=n.vx;n.y+=n.vy;n.ph+=n.ps;
+      if(n.x<pad){n.x=pad;n.vx*=-1;}if(n.x>W-pad){n.x=W-pad;n.vx*=-1;}
+      if(n.y<pad){n.y=pad;n.vy*=-1;}if(n.y>H-pad){n.y=H-pad;n.vy*=-1;}
+    }
+    for(var i=0;i<particles.length;i++){
+      particles[i].t+=particles[i].sp;
+      if(particles[i].t>1)particles[i].t=0;
+    }
+  }
+
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    for(var i=0;i<edges.length;i++)drawE(edges[i]);
+    for(var i=0;i<particles.length;i++)drawP(particles[i]);
+    for(var i=0;i<nodes.length;i++)drawN(nodes[i]);
+    upd();requestAnimationFrame(frame);
+  }
+
+  function init(){resize();build();frame();}
+  var rt;window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){resize();build();},250);});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+
+// Nav scroll effect
+(function(){
+  var nav=document.getElementById('site-nav');
+  window.addEventListener('scroll',function(){
+    nav.classList.toggle('scrolled',window.scrollY>40);
+  },{passive:true});
+})();
+
+// Footer year
+document.getElementById('yr').textContent = new Date().getFullYear();
+</script>
+
 </body>
 </html>
