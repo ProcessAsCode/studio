@@ -1,9 +1,9 @@
 // Algomation Studio – auth + demo mode implementation
 
-import { authManager } from './auth.js?v=3';
-import { apiClient } from './api-client.js?v=3';
-import { loadDemoCatalog, loadDemoProjectById } from './demo.js?v=3';
-import { renderBpmnViewer, renderDmnViewer, renderCmmnViewer, destroyViewers } from './viewers.js?v=3';
+import { authManager } from './auth.js?v=4';
+import { apiClient } from './api-client.js?v=4';
+import { loadDemoCatalog, loadDemoProjectById } from './demo.js?v=4';
+import { renderBpmnViewer, renderDmnViewer, renderCmmnViewer, destroyViewers } from './viewers.js?v=4';
 import {
   uiSetMode,
   uiRenderProjectList,
@@ -14,7 +14,7 @@ import {
   uiSetAuthReady,
   uiOpenAuthModal,
   uiAuthModalError
-} from './ui.js?v=3';
+} from './ui.js?v=4';
 
 const MODE_GUEST = 'guest';
 const MODE_AUTH = 'auth';
@@ -360,13 +360,13 @@ function setupButtons() {
     if (!btn || !container) return;
 
     btn.addEventListener('click', async () => {
-      const visible = container.style.display === 'block';
+      const visible = container.style.display === 'flex';
 
       if (visible) {
         container.style.display = 'none';
         btn.textContent = 'Show XML';
       } else {
-        container.style.display = 'block';
+        container.style.display = 'flex';
         btn.textContent = 'Hide XML';
         await updateXmlPreview(kind);
       }
@@ -425,6 +425,17 @@ function setupButtons() {
 
   if (signInBtn) {
     signInBtn.addEventListener('click', () => uiOpenAuthModal('login'));
+  }
+
+  const dmnBackBtn = document.getElementById('btn-dmn-back-to-table');
+  if (dmnBackBtn) {
+    dmnBackBtn.addEventListener('click', async () => {
+      const viewer = window._activeDmnViewer || dmnModeler;
+      if (!viewer) return;
+      const views = viewer.getViews();
+      const tableView = views.find(v => v.type === 'decisionTable') || views[0];
+      if (tableView) await viewer.open(tableView);
+    });
   }
 
   if (signUpBtn) {
