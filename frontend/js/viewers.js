@@ -10,7 +10,6 @@ function resetContainer(containerEl) {
 
 function fitViewerViewport(viewer, containerEl) {
   if (!viewer) return;
-  // Skip if container is hidden/zero-size (causes non-finite SVGMatrix error)
   if (containerEl && (containerEl.offsetWidth === 0 || containerEl.offsetHeight === 0)) return;
   try {
     const canvas = viewer.get('canvas');
@@ -18,10 +17,19 @@ function fitViewerViewport(viewer, containerEl) {
   } catch (err) { /* hidden tab — ignore */ }
 }
 
+function syncDmnNavButtons(activeViewType) {
+  const backBtn = document.getElementById('btn-dmn-back-to-table');
+  if (backBtn) {
+    backBtn.style.display = activeViewType === 'drd' ? 'inline-block' : 'none';
+  }
+}
+
 export function destroyViewers() {
   if (bpmnViewer) { bpmnViewer.destroy(); bpmnViewer = null; }
   if (dmnViewer)  { dmnViewer.destroy();  dmnViewer  = null; }
   if (cmmnViewer) { cmmnViewer.destroy(); cmmnViewer = null; }
+  window._activeDmnViewer = null;
+  syncDmnNavButtons(null);
 }
 
 export function renderBpmnViewer(containerEl, xml) {
@@ -48,13 +56,21 @@ export function renderDmnViewer(containerEl, xml) {
     literalExpression: { width: '100%', height: '100%' },
     keyboard: { bindTo: null }
   });
+
+  dmnViewer.on('views.changed', ({ activeView }) => {
+    syncDmnNavButtons(activeView ? activeView.type : null);
+  });
+
   dmnViewer.importXML(xml).then(async () => {
     const views = dmnViewer.getViews();
     if (views && views.length) {
       const v = views.find(v => v.type === 'decisionTable') || views[0];
       await dmnViewer.open(v);
+      syncDmnNavButtons(v.type);
     }
   }).catch(err => console.error('Failed to render DMN viewer', err));
+
+  window._activeDmnViewer = dmnViewer;
   return dmnViewer;
 }
 
@@ -64,7 +80,6 @@ export function renderCmmnViewer(containerEl, xml) {
   if (cmmnViewer) cmmnViewer.destroy();
   resetContainer(containerEl);
   cmmnViewer = new CmmnCtor({ container: containerEl, keyboard: { bindTo: null } });
-  // cmmn-js@0.20.0 uses callbacks, not promises
   cmmnViewer.importXML(xml, function(err) {
     if (err) { console.error('Failed to render CMMN viewer', err); return; }
     fitViewerViewport(cmmnViewer, containerEl);
