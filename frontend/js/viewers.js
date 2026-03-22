@@ -10,11 +10,12 @@ function resetContainer(containerEl) {
 
 function fitViewerViewport(viewer, containerEl) {
   if (!viewer) return;
+  // Skip if container is hidden/zero-size (causes non-finite SVGMatrix error)
   if (containerEl && (containerEl.offsetWidth === 0 || containerEl.offsetHeight === 0)) return;
   try {
     const canvas = viewer.get('canvas');
     if (canvas && typeof canvas.zoom === 'function') canvas.zoom('fit-viewport');
-  } catch (err) { /* hidden tab, ignore */ }
+  } catch (err) { /* hidden tab — ignore */ }
 }
 
 export function destroyViewers() {
