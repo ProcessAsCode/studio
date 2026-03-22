@@ -8,12 +8,13 @@ function resetContainer(containerEl) {
   containerEl.style.pointerEvents = 'none';
 }
 
-function fitViewerViewport(viewer) {
+function fitViewerViewport(viewer, containerEl) {
   if (!viewer) return;
+  if (containerEl && (containerEl.offsetWidth === 0 || containerEl.offsetHeight === 0)) return;
   try {
     const canvas = viewer.get('canvas');
     if (canvas && typeof canvas.zoom === 'function') canvas.zoom('fit-viewport');
-  } catch (err) { console.warn('Could not fit viewer viewport', err); }
+  } catch (err) { /* hidden tab, ignore */ }
 }
 
 export function destroyViewers() {
@@ -29,7 +30,7 @@ export function renderBpmnViewer(containerEl, xml) {
   resetContainer(containerEl);
   bpmnViewer = new BpmnCtor({ container: containerEl, keyboard: { bindTo: null } });
   bpmnViewer.importXML(xml).then(() => {
-    fitViewerViewport(bpmnViewer);
+    fitViewerViewport(bpmnViewer, containerEl);
   }).catch(err => console.error('Failed to render BPMN viewer', err));
   return bpmnViewer;
 }
@@ -65,7 +66,7 @@ export function renderCmmnViewer(containerEl, xml) {
   // cmmn-js@0.20.0 uses callbacks, not promises
   cmmnViewer.importXML(xml, function(err) {
     if (err) { console.error('Failed to render CMMN viewer', err); return; }
-    fitViewerViewport(cmmnViewer);
+    fitViewerViewport(cmmnViewer, containerEl);
   });
   return cmmnViewer;
 }
