@@ -1,9 +1,9 @@
 // Algomation Studio – auth + demo mode implementation
 
-import { authManager } from './auth.js';
-import { apiClient } from './api-client.js';
-import { loadDemoCatalog, loadDemoProjectById } from './demo.js';
-import { renderBpmnViewer, renderDmnViewer, renderCmmnViewer, destroyViewers } from './viewers.js';
+import { authManager } from './auth.js?v=3';
+import { apiClient } from './api-client.js?v=3';
+import { loadDemoCatalog, loadDemoProjectById } from './demo.js?v=3';
+import { renderBpmnViewer, renderDmnViewer, renderCmmnViewer, destroyViewers } from './viewers.js?v=3';
 import {
   uiSetMode,
   uiRenderProjectList,
@@ -14,7 +14,7 @@ import {
   uiSetAuthReady,
   uiOpenAuthModal,
   uiAuthModalError
-} from './ui.js';
+} from './ui.js?v=3';
 
 const MODE_GUEST = 'guest';
 const MODE_AUTH = 'auth';
