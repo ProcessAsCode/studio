@@ -306,7 +306,11 @@ This is a private repository for Algomation Studio. For issues or questions, con
 
 ## License
 
-Proprietary - Algomation AI
+Algomation Studio is open source under the **GNU Affero General Public License
+v3.0** — see [LICENSE](LICENSE). Third-party notices, including the bpmn.io
+terms, are in [NOTICE](NOTICE).
+
+Part of the [Process-as-Code](https://github.com/ProcessAsCode) open-source stack.
 
 ## Learn More
 

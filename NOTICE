@@ -1,0 +1,12 @@
+Algomation Studio
+Part of the Process-as-Code open-source stack: https://github.com/ProcessAsCode
+
+Copyright (c) 2025-2026 Cyberfort SIA.
+Licensed under the GNU Affero General Public License v3.0 only (AGPL-3.0-only).
+See LICENSE.
+
+Third-party components
+----------------------
+The modelling editors use the bpmn.io toolkits (bpmn-js, dmn-js, cmmn-js).
+Their licence terms, including the requirement to keep the bpmn.io watermark
+visible, are available at https://bpmn.io/license
